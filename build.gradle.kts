@@ -8,6 +8,7 @@ plugins {
 val ktorVersion = "3.2.0"
 val kmongoVersion = "4.11.0"
 val logback = "1.5.18"
+val ktorPluginsVersion = "2.2.1"
 
 repositories {
     mavenCentral()
@@ -26,6 +27,8 @@ dependencies {
     implementation("io.ktor:ktor-client-core-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-cio-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation-jvm:$ktorVersion")
+    implementation("io.github.flaxoos:ktor-server-task-scheduling-core:$ktorPluginsVersion")
+    implementation("io.github.flaxoos:ktor-server-task-scheduling-mongodb:$ktorPluginsVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:$kmongoVersion")
     implementation("ch.qos.logback:logback-classic:$logback")

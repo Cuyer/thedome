@@ -15,8 +15,13 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+
+import io.github.flaxoos.ktor.server.plugins.taskscheduling.TaskScheduling
+import io.github.flaxoos.ktor.server.plugins.taskscheduling.managers.lock.database.mongoDb
+import dev.inmo.krontab.builder.SchedulerBuilder
+import dev.inmo.krontab.builder.buildSchedule
+import dev.inmo.krontab.builder.TimeBuilder
+import com.mongodb.kotlin.client.coroutine.MongoClient
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.http.*
 import io.ktor.server.plugins.statuspages.*
@@ -74,8 +79,8 @@ fun Application.module() {
     }
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
-    val client = KMongo.createClient(mongoUri).coroutine
-    val database = client.getDatabase("thedome")
+    val mongoClient = KMongo.createClient(mongoUri).coroutine
+    val database = mongoClient.getDatabase("thedome")
     val serversCollection = database.getCollection<BattlemetricsServerContent>("servers")
 
     val httpClient = HttpClient(CIO) {
@@ -84,6 +89,25 @@ fun Application.module() {
         }
     }
 
+    val fetchCron = System.getenv("FETCH_CRON") ?: "0 0 * * * ? 0"
+    val schedulerClient = MongoClient.create(mongoUri)
+
+    install(TaskScheduling) {
+        mongoDb {
+            client = schedulerClient
+            databaseName = "thedome"
+        }
+        task {
+            name = "fetch-servers"
+            kronSchedule = { applyCron(fetchCron) }
+            task = { fetchServers(httpClient, serversCollection) }
+        }
+    }
+
+    monitor.subscribe(ApplicationStopped) {
+        schedulerClient.close()
+    }
+    
     monitor.subscribe(ApplicationStarted) {
         launchFetchJob(httpClient, serversCollection)
     }
@@ -103,27 +127,6 @@ fun Application.module() {
             call.respond(servers)
         }
         swaggerUI(path = "swagger")
-    }
-}
-
-private fun Application.launchFetchJob(
-    httpClient: HttpClient,
-    serversCollection: CoroutineCollection<BattlemetricsServerContent>
-) {
-    val delayMillis = (System.getenv("FETCH_DELAY_MS") ?: "3600000").toLong()
-    val fetchScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    monitor.subscribe(ApplicationStopped) {
-        fetchScope.cancel()
-    }
-    fetchScope.launch {
-        while (true) {
-            try {
-                fetchServers(httpClient, serversCollection)
-            } catch (e: Exception) {
-                log.error("Failed to fetch servers", e)
-            }
-            delay(delayMillis)
-        }
     }
 }
 
@@ -155,6 +158,33 @@ private suspend fun fetchServers(
     collection.deleteMany()
     if (servers.isNotEmpty()) {
         collection.insertMany(servers)
+    }
+}
+
+private fun SchedulerBuilder.applyCron(expr: String) {
+    val parts = expr.trim().split(" ").filter { it.isNotEmpty() }
+    require(parts.size >= 5) { "Cron expression must have at least 5 parts" }
+    seconds { applyPart(parts[0]) }
+    minutes { applyPart(parts[1]) }
+    hours { applyPart(parts[2]) }
+    dayOfMonth { applyPart(parts[3]) }
+    months { applyPart(parts[4]) }
+    if (parts.size > 5) {
+        dayOfWeek { applyPart(parts[5]) }
+    }
+    if (parts.size > 6) {
+        years { applyPart(parts[6]) }
+    }
+}
+
+private fun <N : Number> TimeBuilder<N>.applyPart(token: String) {
+    when {
+        token == "*" || token == "?" -> allowAll()
+        token.startsWith("*/") -> {
+            val step = token.substring(2).toInt()
+            every(step)
+        }
+        else -> at(token.toInt())
     }
 }
 
