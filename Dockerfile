@@ -11,6 +11,7 @@ WORKDIR /app
 # Copy Gradle wrapper and build scripts first for better caching
 COPY --link gradlew gradlew
 COPY --link build.gradle.kts settings.gradle.kts ./
+COPY --link gradle/wrapper/gradle-wrapper.jar gradle/wrapper/
 COPY --link gradle gradle/
 
 # Make gradlew executable
