@@ -3,6 +3,8 @@ package pl.cuyer.thedome
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts
+import com.mongodb.client.model.ReplaceOneModel
+import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import dev.inmo.krontab.builder.SchedulerBuilder
 import dev.inmo.krontab.builder.TimeBuilder
@@ -151,14 +153,15 @@ private suspend fun fetchServers(
             return
         }
 
-        // Upsert each server
-        servers.forEach { server ->
-            collection.replaceOne(
-                filter = Filters.eq("id", server.id),
-                replacement = server,
-                options = ReplaceOptions().upsert(true)
+        // Upsert all servers in bulk
+        val replaceOperations = servers.map { server ->
+            ReplaceOneModel(
+                Filters.eq("id", server.id),
+                server,
+                ReplaceOptions().upsert(true)
             )
         }
+        collection.bulkWrite(replaceOperations, BulkWriteOptions().ordered(false))
 
         // Delete stale entries (not in the fetched list)
         val idsToKeep = servers.map { it.id }
