@@ -38,6 +38,44 @@ Run the container exposing port 8080:
 docker run -p 8080:8080 thedome
 ```
 
+## Docker Compose
+
+You can run the project and its MongoDB dependency using Docker Compose. The provided `docker-compose.yml` sets up both services and handles networking and environment variables for you.
+
+### Requirements
+- Docker and Docker Compose installed
+- The application is built using Eclipse Temurin JDK 21 (Alpine base image)
+- MongoDB is included as a service in the compose file
+
+### Environment Variables
+- `MONGODB_URI` – MongoDB connection string (defaults to `mongodb://mongo:27017/thedome` for the container)
+- `FETCH_DELAY_MS` – fetch interval in milliseconds (optional)
+- `API_KEY` – optional RustMaps API key (optional)
+- `PORT` – application port (defaults to `8080`)
+
+You can set these in the `docker-compose.yml` or via an `.env` file.
+
+### Build and Run
+
+To build and start the services:
+
+```bash
+docker compose up --build
+```
+
+This will start two containers:
+- `kotlin-thedome` (the application) on port `8080`
+- `mongo` (MongoDB) on port `27017`
+
+The application will be available at `http://localhost:8080/servers`.
+
+### Ports
+- Application: `8080` (exposed on host)
+- MongoDB: `27017` (exposed for local development)
+
+### Data Persistence
+MongoDB data is persisted in a Docker volume named `mongo-data`.
+
 ## Development
 
 Coding style is defined by the `.editorconfig` file at the repository root. Configure
