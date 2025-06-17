@@ -1,6 +1,6 @@
 # TheDome backend
 
-This project uses Ktor with MongoDB. The service periodically pulls Rust servers from the Battlemetrics API, saves them into MongoDB and exposes `/servers` endpoint which returns servers sorted by rank with pagination.
+This project uses Ktor with MongoDB. The service periodically pulls Rust servers from the Battlemetrics API, saves them into MongoDB and exposes `/servers` endpoint which returns servers sorted by rank with pagination. Scheduled tasks are managed using the Ktor Task Scheduling plugin.
 
 ## Running
 
@@ -13,7 +13,7 @@ Ensure MongoDB is accessible and set `MONGODB_URI` if needed. You can also set `
 Environment variables:
 
 - `MONGODB_URI` – MongoDB connection string
-- `FETCH_DELAY_MS` – fetch interval in milliseconds
+- `FETCH_CRON` – cron expression for server fetch schedule (defaults to hourly)
 - `API_KEY` – optional RustMaps API key
 - `PORT` – overrides the default port if implemented
 
@@ -49,7 +49,7 @@ You can run the project and its MongoDB dependency using Docker Compose. The pro
 
 ### Environment Variables
 - `MONGODB_URI` – MongoDB connection string (defaults to `mongodb://mongo:27017/thedome` for the container)
-- `FETCH_DELAY_MS` – fetch interval in milliseconds (optional)
+- `FETCH_CRON` – cron expression for server fetch schedule (optional)
 - `API_KEY` – optional RustMaps API key (optional)
 - `PORT` – application port (defaults to `8080`)
 
