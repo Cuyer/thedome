@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.http.*
 import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.swagger.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +58,10 @@ fun Application.module() {
         status(HttpStatusCode.NotFound) { call, status ->
             call.respondText(text = "404: Page Not Found", status = status)
         }
+    }
+    install(CORS) {
+        anyHost()
+        allowHeader(HttpHeaders.ContentType)
     }
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
