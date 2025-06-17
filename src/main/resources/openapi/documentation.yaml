@@ -17,6 +17,61 @@ paths:
           schema:
             type: integer
           required: false
+        - in: query
+          name: map
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: flag
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: region
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: difficulty
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: modded
+          schema:
+            type: boolean
+          required: false
+        - in: query
+          name: official
+          schema:
+            type: boolean
+          required: false
+        - in: query
+          name: wipeSchedule
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: rank
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: player_count
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: server_capacity
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: order
+          schema:
+            type: string
+          required: false
       responses:
         '200':
           description: List of servers

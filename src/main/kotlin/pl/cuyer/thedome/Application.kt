@@ -33,6 +33,8 @@ import org.litote.kmongo.reactivestreams.KMongo
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.resources.Servers
+import pl.cuyer.thedome.services.ServersService
+import pl.cuyer.thedome.routes.ServersEndpoint
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 
 private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
@@ -103,20 +105,11 @@ fun Application.module() {
         schedulerClient.close()
     }
 
+    val serversService = ServersService(serversCollection)
+    val serversEndpoint = ServersEndpoint(serversService)
+
     routing {
-        get<Servers> { servers: Servers ->
-            val page = servers.page ?: 1
-            val size = servers.size ?: 20
-            val skip = (page - 1) * size
-            val servers = serversCollection
-                .find()
-                .sort(Sorts.ascending("attributes.rank"))
-                .skip(skip)
-                .limit(size)
-                .toList()
-                .map { it.toServerInfo() }
-            call.respond(servers)
-        }
+        serversEndpoint.register(this)
         swaggerUI(path = "swagger")
     }
 }

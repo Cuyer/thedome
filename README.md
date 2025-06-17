@@ -18,10 +18,26 @@ Environment variables:
 - `PORT` – overrides the default port if implemented
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
-Query servers with optional `page` and `size` parameters:
+Query servers with optional filtering. Alongside pagination (`page` and `size`),
+the following parameters can be used:
+
+- `map` – map type
+- `flag` – country code
+- `region` – server region
+- `difficulty` – server difficulty
+- `modded` – modded servers only when `true`
+- `official` – official servers only when `true`
+- `wipeSchedule` – wipe schedule
+- `rank` – server rank
+- `player_count` – current player count
+- `server_capacity` – maximum players count
+- `order` – ordering field (`WIPE`, `RANK`, `PLAYER_COUNT`; defaults to `WIPE`)
+
+
+Example request:
 
 ```
-GET http://localhost:8080/servers?page=1&size=20
+GET http://localhost:8080/servers?page=1&size=20&region=EUROPE&order=PLAYER_COUNT
 ```
 
 ## Docker
