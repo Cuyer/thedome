@@ -69,7 +69,7 @@ fun Application.module() {
         }
     }
 
-    environment.monitor.subscribe(ApplicationStarted) {
+    monitor.subscribe(ApplicationStarted) {
         launchFetchJob(httpClient, serversCollection)
     }
 
@@ -96,7 +96,7 @@ private fun Application.launchFetchJob(
 ) {
     val delayMillis = (System.getenv("FETCH_DELAY_MS") ?: "3600000").toLong()
     val fetchScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    environment.monitor.subscribe(ApplicationStopped) {
+    monitor.subscribe(ApplicationStopped) {
         fetchScope.cancel()
     }
     fetchScope.launch {
