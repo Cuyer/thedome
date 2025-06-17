@@ -15,3 +15,8 @@ Query servers with optional `page` and `size` parameters:
 ```
 GET http://localhost:8080/servers?page=1&size=20
 ```
+
+## Development
+
+Coding style is defined by the `.editorconfig` file at the repository root. Configure
+your editor to respect these settings when contributing.
