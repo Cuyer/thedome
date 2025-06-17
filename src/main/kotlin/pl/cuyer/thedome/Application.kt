@@ -21,6 +21,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.http.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.plugins.calllogging.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.swagger.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +68,9 @@ fun Application.module() {
             val userAgent = call.request.headers["User-Agent"]
             "Status: $status, HTTP method: $httpMethod, User agent: $userAgent"
         }
+    install(CORS) {
+        anyHost()
+        allowHeader(HttpHeaders.ContentType)
     }
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
