@@ -4,11 +4,18 @@ This project uses Ktor with MongoDB. The service periodically pulls Rust servers
 
 ## Running
 
-Ensure MongoDB is accessible and set `MONGODB_URI` if needed. Then start the server:
+Ensure MongoDB is accessible and set `MONGODB_URI` if needed. You can also set `PORT` to change the listening port (defaults to `8080`). Then start the server:
 
 ```
 ./gradlew run
 ```
+
+Environment variables:
+
+- `MONGODB_URI` – MongoDB connection string
+- `FETCH_DELAY_MS` – fetch interval in milliseconds
+- `API_KEY` – optional RustMaps API key
+- `PORT` – overrides the default port if implemented
 
 Query servers with optional `page` and `size` parameters:
 
@@ -30,3 +37,12 @@ Run the container exposing port 8080:
 ```bash
 docker run -p 8080:8080 thedome
 ```
+
+## Development
+
+Coding style is defined by the `.editorconfig` file at the repository root. Configure
+your editor to respect these settings when contributing.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
