@@ -16,6 +16,7 @@ Environment variables:
 - `FETCH_DELAY_MS` – fetch interval in milliseconds
 - `API_KEY` – optional RustMaps API key
 - `PORT` – overrides the default port if implemented
+- Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional `page` and `size` parameters:
 

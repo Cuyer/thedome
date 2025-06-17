@@ -18,6 +18,8 @@ import io.ktor.client.request.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.http.*
+import io.ktor.server.plugins.statuspages.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -47,6 +49,12 @@ fun Application.module() {
         json(Json { ignoreUnknownKeys = true })
     }
     install(Resources)
+    install(StatusPages) {
+        exception<Throwable> { call, cause ->
+            call.application.log.error("Unhandled exception", cause)
+            call.respond(HttpStatusCode.InternalServerError)
+        }
+    }
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
     val client = KMongo.createClient(mongoUri).coroutine
