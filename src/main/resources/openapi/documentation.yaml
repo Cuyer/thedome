@@ -78,9 +78,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ServerInfo'
+                $ref: '#/components/schemas/ServersResponse'
 components:
   schemas:
     ServerInfo:
@@ -125,3 +123,18 @@ components:
           type: string
         description:
           type: string
+    ServersResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        total_pages:
+          type: integer
+        total_items:
+          type: integer
+        servers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServerInfo'
