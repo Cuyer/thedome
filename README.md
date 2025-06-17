@@ -10,6 +10,13 @@ Ensure MongoDB is accessible and set `MONGODB_URI` if needed. Then start the ser
 ./gradlew run
 ```
 
+Environment variables:
+
+- `MONGODB_URI` – MongoDB connection string
+- `FETCH_DELAY_MS` – fetch interval in milliseconds
+- `API_KEY` – optional RustMaps API key
+- `PORT` – overrides the default port if implemented
+
 Query servers with optional `page` and `size` parameters:
 
 ```
