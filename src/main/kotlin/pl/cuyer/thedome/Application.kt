@@ -30,6 +30,8 @@ import pl.cuyer.thedome.domain.rust.RustSettings
 import pl.cuyer.thedome.domain.rust.RustWipe
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsPage
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
+import pl.cuyer.thedome.domain.battlemetrics.extractMapId
+import pl.cuyer.thedome.domain.battlemetrics.fetchMapIcon
 
 
 fun main() {
@@ -98,10 +100,23 @@ private suspend fun fetchServers(
     collection: CoroutineCollection<BattlemetricsServerContent>
 ) {
     val servers = mutableListOf<BattlemetricsServerContent>()
+    val apiKey = System.getenv("API_KEY") ?: ""
     var url: String? = "https://api.battlemetrics.com/servers?filter[game]=rust&sort=rank&page[size]=100"
     while (url != null) {
         val page: BattlemetricsPage = client.get(url).body()
-        servers += page.data
+        servers += page.data.map { server ->
+            val mapId = server.extractMapId()
+            if (!mapId.isNullOrEmpty() && apiKey.isNotEmpty()) {
+                val iconUrl = client.fetchMapIcon(mapId, apiKey)
+                val rustMaps = server.attributes.details?.rustMaps
+                val details = server.attributes.details
+                val newRustMaps = rustMaps?.copy(imageIconUrl = iconUrl)
+                val newDetails = details?.copy(rustMaps = newRustMaps)
+                server.copy(attributes = server.attributes.copy(details = newDetails))
+            } else {
+                server
+            }
+        }
         url = page.links?.next
     }
 
