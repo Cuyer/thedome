@@ -8,11 +8,12 @@ import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
 import pl.cuyer.thedome.domain.server.Order
 import pl.cuyer.thedome.domain.server.ServerInfo
+import pl.cuyer.thedome.domain.server.ServersResponse
 import pl.cuyer.thedome.resources.Servers
 import java.util.regex.Pattern
 
 class ServersService(private val collection: CoroutineCollection<BattlemetricsServerContent>) {
-    suspend fun getServers(params: Servers): List<ServerInfo> {
+    suspend fun getServers(params: Servers): ServersResponse {
         val page = params.page ?: 1
         val size = params.size ?: 20
         val skip = (page - 1) * size
@@ -50,13 +51,28 @@ class ServersService(private val collection: CoroutineCollection<BattlemetricsSe
 
         val query = if (filters.isEmpty()) collection.find() else collection.find(Filters.and(filters))
 
+        val totalItems = if (filters.isEmpty()) {
+            collection.countDocuments()
+        } else {
+            collection.countDocuments(Filters.and(filters))
+        }
+
         val serverInfos = query
             .sort(sort)
             .skip(skip)
             .limit(size)
             .toList()
             .map { it.toServerInfo() }
+            .filter { params.wipeSchedule == null || it.wipeSchedule == params.wipeSchedule }
 
-        return serverInfos.filter { params.wipeSchedule == null || it.wipeSchedule == params.wipeSchedule }
+        val totalPages = if (size == 0) 0 else ((totalItems + size - 1) / size).toInt()
+
+        return ServersResponse(
+            page = page,
+            size = size,
+            totalPages = totalPages,
+            totalItems = totalItems,
+            servers = serverInfos
+        )
     }
 }
