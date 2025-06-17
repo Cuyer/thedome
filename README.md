@@ -22,3 +22,7 @@ Query servers with optional `page` and `size` parameters:
 ```
 GET http://localhost:8080/servers?page=1&size=20
 ```
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
