@@ -4,8 +4,9 @@ plugins {
     application
 }
 
-val ktorVersion = "2.3.8"
+val ktorVersion = "3.2.0"
 val kmongoVersion = "4.11.0"
+val logback = "1.5.18"
 
 repositories {
     mavenCentral()
@@ -20,6 +21,7 @@ dependencies {
     implementation("io.ktor:ktor-client-cio-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation-jvm:$ktorVersion")
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:$kmongoVersion")
+    implementation("ch.qos.logback:logback-classic:$logback")
     testImplementation(kotlin("test"))
 }
 
