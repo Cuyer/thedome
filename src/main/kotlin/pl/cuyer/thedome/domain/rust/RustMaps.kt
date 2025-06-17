@@ -29,6 +29,8 @@ data class RustMaps(
     val size: Int? = null,
     @SerialName("thumbnailUrl")
     val thumbnailUrl: String? = null,
+    @SerialName("imageIconUrl")
+    val imageIconUrl: String? = null,
     @SerialName("updatedAt")
     val updatedAt: String? = null,
     @SerialName("url")
