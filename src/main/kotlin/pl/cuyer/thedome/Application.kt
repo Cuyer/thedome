@@ -28,6 +28,10 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
@@ -55,7 +59,7 @@ fun Application.module() {
     install(Resources)
     install(StatusPages) {
         exception<Throwable> { call, cause ->
-            call.respondText(text = "500: $cause" , status = HttpStatusCode.InternalServerError)
+            call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
         }
         status(HttpStatusCode.NotFound) { call, status ->
             call.respondText(text = "404: Page Not Found", status = status)
@@ -80,6 +84,16 @@ fun Application.module() {
     val mongoClient = KMongo.createClient(mongoUri).coroutine
     val database = mongoClient.getDatabase("thedome")
     val serversCollection = database.getCollection<BattlemetricsServerContent>("servers")
+    runBlocking {
+        serversCollection.createIndex("{ 'attributes.rank': 1 }")
+        serversCollection.createIndex("{ 'attributes.country': 1 }")
+        serversCollection.createIndex("{ 'attributes.details.rust_settings.timeZone': 1 }")
+        serversCollection.createIndex("{ 'attributes.details.rust_gamemode': 1 }")
+        serversCollection.createIndex("{ 'attributes.details.rust_type': 1 }")
+        serversCollection.createIndex("{ 'attributes.details.official': 1 }")
+        serversCollection.createIndex("{ 'attributes.details.rust_settings.groupLimit': 1 }")
+        serversCollection.createIndex("{ 'attributes.details.rust_last_wipe': 1 }")
+    }
 
     val httpClient = HttpClient(CIO) {
         install(ClientContentNegotiation) {
@@ -122,7 +136,8 @@ private suspend fun fetchServers(
 ) {
     val servers = mutableListOf<BattlemetricsServerContent>()
     val apiKey = System.getenv("API_KEY") ?: ""
-    var url: String? = "https://api.battlemetrics.com/servers?filter[game]=rust&sort=rank&page[size]=100"
+    val iconCache = mutableMapOf<String, String?>()
+    var url: String? = "https://api.battlemetrics.com/servers?sort=rank&filter[game]=rust&page[size]=100&filter[status]=online,offline"
     logger.info("Fetching servers from Battlemetrics API")
 
     try {
@@ -131,25 +146,29 @@ private suspend fun fetchServers(
             val page: BattlemetricsPage = client.get(url).body()
             logger.info("Received ${page.data.size} servers")
 
-            servers += page.data.map { server ->
-                val mapId = server.extractMapId()
-                if (!mapId.isNullOrEmpty() && apiKey.isNotEmpty()) {
-                    val iconUrl = client.fetchMapIcon(mapId, apiKey)
-                    val rustMaps = server.attributes.details?.rustMaps
-                    val details = server.attributes.details
-                    val newRustMaps = rustMaps?.copy(imageIconUrl = iconUrl)
-                    val newDetails = details?.copy(rustMaps = newRustMaps)
-                    server.copy(attributes = server.attributes.copy(details = newDetails))
-                } else {
-                    server
-                }
+            val pageServers = coroutineScope {
+                page.data.map { server ->
+                    async {
+                        val mapId = server.extractMapId()
+                        val iconUrl = if (!mapId.isNullOrEmpty() && apiKey.isNotEmpty() && server.attributes.status != "offline") {
+                            iconCache.getOrPut(mapId) { client.fetchMapIcon(mapId, apiKey) }
+                        } else null
+
+                        val rustMaps = server.attributes.details?.rustMaps
+                        val details = server.attributes.details
+                        val newRustMaps = if (iconUrl != null) rustMaps?.copy(imageIconUrl = iconUrl) else rustMaps
+                        val newDetails = details?.copy(rustMaps = newRustMaps)
+                        server.copy(attributes = server.attributes.copy(details = newDetails))
+                    }
+                }.awaitAll()
             }
+            servers += pageServers
 
             url = page.links?.next
         }
 
         if (servers.isEmpty()) {
-            logger.warn("No servers fetched. Skipping database update to avoid accidental deletion.")
+            logger.warn("No servers fetched. Skipping database update.")
             return
         }
 
