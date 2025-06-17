@@ -25,7 +25,12 @@ import kotlinx.coroutines.cancel
 import org.litote.kmongo.coroutine.*
 import org.litote.kmongo.reactivestreams.KMongo
 import com.mongodb.client.model.Sorts
-import kotlinx.serialization.json.JsonObject
+import pl.cuyer.thedome.domain.rust.RustMaps
+import pl.cuyer.thedome.domain.rust.RustSettings
+import pl.cuyer.thedome.domain.rust.RustWipe
+import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsPage
+import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
+
 
 fun main() {
     embeddedServer(Netty, port = 8080, module = Application::module).start(wait = true)
@@ -106,94 +111,3 @@ private suspend fun fetchServers(
     }
 }
 
-@Serializable
-data class BattlemetricsPage(
-    @SerialName("data")
-    val data: List<BattlemetricsServerContent> = emptyList(),
-    @SerialName("links")
-    val links: Links? = null
-)
-
-@Serializable
-data class Links(
-    @SerialName("next")
-    val next: String? = null
-)
-
-@Serializable
-data class BattlemetricsServerContent(
-    @SerialName("attributes")
-    val attributes: Attributes,
-    @SerialName("id")
-    val id: String
-)
-
-@Serializable
-data class Attributes(
-    @SerialName("country")
-    val country: String? = null,
-    @SerialName("createdAt")
-    val createdAt: String? = null,
-    @SerialName("details")
-    val details: Details? = null,
-    @SerialName("id")
-    val id: String,
-    @SerialName("ip")
-    val ip: String? = null,
-    @SerialName("maxPlayers")
-    val maxPlayers: Int? = null,
-    @SerialName("name")
-    val name: String? = null,
-    @SerialName("players")
-    val players: Int? = null,
-    @SerialName("port")
-    val port: Int? = null,
-    @SerialName("rank")
-    val rank: Int? = null,
-    @SerialName("status")
-    val status: String? = null,
-    @SerialName("updatedAt")
-    val updatedAt: String? = null
-)
-
-@Serializable
-data class Details(
-    @SerialName("map")
-    val map: String? = null,
-    @SerialName("official")
-    val official: Boolean? = null,
-    @SerialName("pve")
-    val pve: Boolean? = null,
-    @SerialName("rust_description")
-    val rustDescription: String? = null,
-    @SerialName("rust_fps_avg")
-    val rustFpsAvg: Double? = null,
-    @SerialName("rust_gamemode")
-    val rustGamemode: String? = null,
-    @SerialName("rust_headerimage")
-    val rustHeaderimage: String? = null,
-    @SerialName("rust_last_wipe")
-    val rustLastWipe: String? = null,
-    @SerialName("rust_maps")
-    val rustMaps: JsonObject? = null,
-    @SerialName("rust_type")
-    val rustType: String? = null,
-    @SerialName("rust_next_wipe")
-    val rustNextWipe: String? = null,
-    @SerialName("rust_next_wipe_map")
-    val rustNextWipeMap: String? = null,
-    @SerialName("rust_premium")
-    val rustPremium: Boolean? = null,
-    @SerialName("rust_queued_players")
-    val rustQueuedPlayers: Int? = null,
-    @SerialName("rust_settings")
-    val rustSettings: JsonObject? = null,
-    @SerialName("rust_url")
-    val rustUrl: String? = null,
-    @SerialName("rust_wipes")
-    val rustWipes: List<JsonObject> = emptyList(),
-    @SerialName("rust_world_seed")
-    val rustWorldSeed: Long? = null,
-    @SerialName("rust_world_size")
-    val rustWorldSize: Int? = null
-)
