@@ -31,6 +31,7 @@ dependencies {
     implementation("io.github.flaxoos:ktor-server-task-scheduling-mongodb:$ktorPluginsVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:$kmongoVersion")
+    implementation(kotlin("reflect"))
     implementation("ch.qos.logback:logback-classic:$logback")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation(kotlin("test"))
