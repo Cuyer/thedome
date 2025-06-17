@@ -32,6 +32,9 @@ import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsPage
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.battlemetrics.extractMapId
 import pl.cuyer.thedome.domain.battlemetrics.fetchMapIcon
+import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
+import io.ktor.server.resources.*
+import pl.cuyer.thedome.resources.Servers
 
 
 fun main() {
@@ -42,6 +45,7 @@ fun Application.module() {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
+    install(Resources)
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
     val client = KMongo.createClient(mongoUri).coroutine
@@ -59,9 +63,9 @@ fun Application.module() {
     }
 
     routing {
-        get("/servers") {
-            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
-            val size = call.request.queryParameters["size"]?.toIntOrNull() ?: 20
+        get<Servers> { servers: Servers ->
+            val page = servers.page ?: 1
+            val size = servers.size ?: 20
             val skip = (page - 1) * size
             val servers = serversCollection
                 .find()
@@ -69,6 +73,7 @@ fun Application.module() {
                 .skip(skip)
                 .limit(size)
                 .toList()
+                .map { it.toServerInfo() }
             call.respond(servers)
         }
     }
