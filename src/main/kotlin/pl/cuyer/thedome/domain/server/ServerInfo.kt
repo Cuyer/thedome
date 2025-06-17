@@ -30,6 +30,5 @@ data class ServerInfo(
     val serverIp: String? = null,
     @SerialName("map_image")
     val mapImage: String? = null,
-    val description: String? = null,
-    val mapId: String? = null
+    val description: String? = null
 )

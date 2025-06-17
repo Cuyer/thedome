@@ -66,7 +66,6 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         serverIp = ipPort(attributes.ip ?: "", attributes.port?.toString() ?: ""),
         mapImage = attributes.details?.rustMaps?.imageIconUrl,
         description = attributes.details?.rustDescription,
-        mapId = this.extractMapId()
     )
 
 private fun calculateCycle(wipes: List<RustWipe>): Double? {
