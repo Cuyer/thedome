@@ -22,7 +22,6 @@ RUN ./gradlew dependencies --no-daemon || true
 
 # Copy the rest of the source code
 COPY --link src src
-COPY --link .editorconfig .editorconfig
 COPY --link src/main/resources src/main/resources
 
 # Build the application (skip tests for faster build)

@@ -51,8 +51,10 @@ fun Application.module() {
     install(Resources)
     install(StatusPages) {
         exception<Throwable> { call, cause ->
-            call.application.log.error("Unhandled exception", cause)
-            call.respond(HttpStatusCode.InternalServerError)
+            call.respondText(text = "500: $cause" , status = HttpStatusCode.InternalServerError)
+        }
+        status(HttpStatusCode.NotFound) { call, status ->
+            call.respondText(text = "404: Page Not Found", status = status)
         }
     }
 
