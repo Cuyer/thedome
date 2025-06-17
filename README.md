@@ -16,6 +16,7 @@ Environment variables:
 - `FETCH_CRON` – cron expression for server fetch schedule (defaults to hourly)
 - `API_KEY` – optional RustMaps API key
 - `PORT` – overrides the default port if implemented
+- Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional `page` and `size` parameters:
 

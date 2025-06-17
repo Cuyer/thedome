@@ -23,7 +23,15 @@ import dev.inmo.krontab.builder.buildSchedule
 import dev.inmo.krontab.builder.TimeBuilder
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import io.ktor.serialization.kotlinx.json.*
-
+import io.ktor.http.*
+import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.plugins.calllogging.*
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.swagger.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import org.litote.kmongo.coroutine.*
 import org.litote.kmongo.reactivestreams.KMongo
 import com.mongodb.client.model.Sorts
@@ -49,6 +57,26 @@ fun Application.module() {
         json(Json { ignoreUnknownKeys = true })
     }
     install(Resources)
+    install(StatusPages) {
+        exception<Throwable> { call, cause ->
+            call.respondText(text = "500: $cause" , status = HttpStatusCode.InternalServerError)
+        }
+        status(HttpStatusCode.NotFound) { call, status ->
+            call.respondText(text = "404: Page Not Found", status = status)
+        }
+    }
+    install(CallLogging) {
+        filter { call -> call.request.path().startsWith("/servers") }
+        format { call ->
+            val status = call.response.status()
+            val httpMethod = call.request.httpMethod.value
+            val userAgent = call.request.headers["User-Agent"]
+            "Status: $status, HTTP method: $httpMethod, User agent: $userAgent"
+        }
+    install(CORS) {
+        anyHost()
+        allowHeader(HttpHeaders.ContentType)
+    }
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
     val mongoClient = KMongo.createClient(mongoUri).coroutine
@@ -76,8 +104,12 @@ fun Application.module() {
         }
     }
 
-    environment.monitor.subscribe(ApplicationStopped) {
+    monitor.subscribe(ApplicationStopped) {
         schedulerClient.close()
+    }
+    
+    monitor.subscribe(ApplicationStarted) {
+        launchFetchJob(httpClient, serversCollection)
     }
 
     routing {
@@ -94,6 +126,7 @@ fun Application.module() {
                 .map { it.toServerInfo() }
             call.respond(servers)
         }
+        swaggerUI(path = "swagger")
     }
 }
 
