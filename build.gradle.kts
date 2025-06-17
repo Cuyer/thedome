@@ -24,7 +24,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.example.ApplicationKt")
+    mainClass.set("pl.cuyer.thedome.ApplicationKt")
 }
 
 kotlin {

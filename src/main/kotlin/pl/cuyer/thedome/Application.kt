@@ -1,4 +1,4 @@
-package com.example
+package pl.cuyer.thedome
 
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
