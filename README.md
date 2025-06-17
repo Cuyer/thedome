@@ -77,6 +77,24 @@ The application will be available at `http://localhost:8080/servers`.
 ### Data Persistence
 MongoDB data is persisted in a Docker volume named `mongo-data`.
 
+## Running with Docker
+
+You can run the backend and MongoDB together using Docker Compose. The setup uses Eclipse Temurin JDK 21 (Alpine) for the application and the latest MongoDB image. The application container is named `kotlin-thedome` and MongoDB is named `mongo`.
+
+- The application exposes port `8080` (mapped to host `8080`).
+- MongoDB exposes port `27017` (mapped to host `27017`).
+- MongoDB data is persisted in the `mongo-data` Docker volume.
+- The default MongoDB URI inside the container is `mongodb://mongo:27017/thedome`.
+- You can override environment variables such as `MONGODB_URI`, `FETCH_CRON`, `API_KEY`, and `PORT` in the `docker-compose.yml` or via an `.env` file.
+
+To start everything:
+
+```bash
+docker compose up --build
+```
+
+The backend will be available at `http://localhost:8080/servers`.
+
 ## Development
 
 Coding style is defined by the `.editorconfig` file at the repository root. Configure

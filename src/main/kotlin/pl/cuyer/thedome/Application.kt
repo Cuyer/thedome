@@ -73,6 +73,8 @@ fun Application.module() {
             val userAgent = call.request.headers["User-Agent"]
             "Status: $status, HTTP method: $httpMethod, User agent: $userAgent"
         }
+    }
+
     install(CORS) {
         anyHost()
         allowHeader(HttpHeaders.ContentType)
@@ -106,10 +108,6 @@ fun Application.module() {
 
     monitor.subscribe(ApplicationStopped) {
         schedulerClient.close()
-    }
-    
-    monitor.subscribe(ApplicationStarted) {
-        launchFetchJob(httpClient, serversCollection)
     }
 
     routing {

@@ -6,7 +6,6 @@ FROM eclipse-temurin:21-jdk-alpine AS build
 # Install build dependencies
 RUN apk add --no-cache bash
 
-# Set workdir
 WORKDIR /app
 
 # Copy Gradle wrapper and build scripts first for better caching
@@ -20,7 +19,7 @@ RUN chmod +x gradlew
 # Pre-download dependencies (leverages Docker cache)
 RUN ./gradlew dependencies --no-daemon || true
 
-# Copy the rest of the source code
+# Copy the rest of the source code and resources
 COPY --link src src
 COPY --link src/main/resources src/main/resources
 
