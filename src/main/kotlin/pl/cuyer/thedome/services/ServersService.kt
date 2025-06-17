@@ -25,26 +25,26 @@ class ServersService(private val collection: CoroutineCollection<BattlemetricsSe
         params.flag?.let { filters += Filters.eq("attributes.country", it.name) }
         params.region?.let {
             val pattern = Pattern.compile("^${it.name}", Pattern.CASE_INSENSITIVE)
-            filters += Filters.regex("attributes.details.rustSettings.timezone", pattern)
+            filters += Filters.regex("attributes.details.rust_settings.timeZone", pattern)
         }
         params.difficulty?.let {
             val pattern = Pattern.compile(it.name, Pattern.CASE_INSENSITIVE)
-            filters += Filters.regex("attributes.details.rustGamemode", pattern)
+            filters += Filters.regex("attributes.details.rust_gamemode", pattern)
         }
         params.modded?.let { modded ->
             val pattern = Pattern.compile("modded", Pattern.CASE_INSENSITIVE)
-            val regexFilter = Filters.regex("attributes.details.rustType", pattern)
+            val regexFilter = Filters.regex("attributes.details.rust_type", pattern)
             filters += if (modded) regexFilter else Filters.not(regexFilter)
         }
         params.official?.let { filters += Filters.eq("attributes.details.official", it) }
-        params.rank?.let { filters += Filters.eq("attributes.rank", it) }
-        params.playerCount?.let { filters += Filters.eq("attributes.players", it) }
-        params.serverCapacity?.let { filters += Filters.eq("attributes.maxPlayers", it) }
+        params.ranking?.let { filters += Filters.lte("attributes.rank", it) }
+        params.playerCount?.let { filters += Filters.gte("attributes.players", it) }
+        params.serverCapacity?.let { filters += Filters.gte("attributes.maxPlayers", it) }
 
         val sortField = when (params.order) {
             Order.RANK -> "attributes.rank"
             Order.PLAYER_COUNT -> "attributes.players"
-            else -> "attributes.details.rustLastWipe"
+            else -> "attributes.details.rust_last_wipe"
         }
         val sort = if (params.order == Order.RANK) Sorts.ascending(sortField) else Sorts.descending(sortField)
 

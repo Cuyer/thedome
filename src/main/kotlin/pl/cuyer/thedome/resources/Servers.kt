@@ -22,10 +22,8 @@ data class Servers(
     val modded: Boolean? = null,
     val official: Boolean? = null,
     val wipeSchedule: WipeSchedule? = null,
-    val rank: Int? = null,
-    @SerialName("player_count")
+    val ranking: Int? = null,
     val playerCount: Int? = null,
-    @SerialName("server_capacity")
     val serverCapacity: Int? = null,
     val order: Order? = null
 )
