@@ -15,3 +15,18 @@ Query servers with optional `page` and `size` parameters:
 ```
 GET http://localhost:8080/servers?page=1&size=20
 ```
+
+## Docker
+
+Build the application distribution and image:
+
+```bash
+./gradlew installDist
+docker build -t thedome .
+```
+
+Run the container exposing port 8080:
+
+```bash
+docker run -p 8080:8080 thedome
+```
