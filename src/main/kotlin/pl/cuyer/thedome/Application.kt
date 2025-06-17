@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.http.*
 import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.swagger.*
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +60,14 @@ fun Application.module() {
             call.respondText(text = "404: Page Not Found", status = status)
         }
     }
+    install(CallLogging) {
+        filter { call -> call.request.path().startsWith("/servers") }
+        format { call ->
+            val status = call.response.status()
+            val httpMethod = call.request.httpMethod.value
+            val userAgent = call.request.headers["User-Agent"]
+            "Status: $status, HTTP method: $httpMethod, User agent: $userAgent"
+        }
     install(CORS) {
         anyHost()
         allowHeader(HttpHeaders.ContentType)
