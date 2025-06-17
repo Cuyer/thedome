@@ -28,9 +28,9 @@ the following parameters can be used:
 - `modded` – modded servers only when `true`
 - `official` – official servers only when `true`
 - `wipeSchedule` – wipe schedule
-- `rank` – server rank
-- `player_count` – current player count
-- `server_capacity` – maximum players count
+- `ranking` – server rank
+- `playerCount` – min player count
+- `groupLimit` – maximum group limit
 - `order` – ordering field (`WIPE`, `RANK`, `PLAYER_COUNT`; defaults to `WIPE`)
 
 

@@ -53,17 +53,17 @@ paths:
             type: string
           required: false
         - in: query
-          name: rank
+          name: ranking
           schema:
             type: integer
           required: false
         - in: query
-          name: player_count
+          name: playerCount
           schema:
             type: integer
           required: false
         - in: query
-          name: server_capacity
+          name: groupLimit
           schema:
             type: integer
           required: false

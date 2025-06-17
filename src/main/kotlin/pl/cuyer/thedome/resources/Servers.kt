@@ -1,7 +1,6 @@
 package pl.cuyer.thedome.resources
 
 import io.ktor.resources.Resource
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import pl.cuyer.thedome.domain.server.Difficulty
 import pl.cuyer.thedome.domain.server.Flag
@@ -24,6 +23,6 @@ data class Servers(
     val wipeSchedule: WipeSchedule? = null,
     val ranking: Int? = null,
     val playerCount: Int? = null,
-    val serverCapacity: Int? = null,
+    val groupLimit: Int? = null,
     val order: Order? = null
 )
