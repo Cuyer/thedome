@@ -91,7 +91,7 @@ fun Application.module() {
         }
     }
 
-    val fetchCron = System.getenv("FETCH_CRON") ?: "0 0 * * * ? 0"
+    val fetchCron = System.getenv("FETCH_CRON") ?: "* * * * *"
     val schedulerClient = MongoClient.create(mongoUri)
 
     install(TaskScheduling) {

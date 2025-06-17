@@ -1,10 +1,8 @@
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
+import pl.cuyer.thedome.domain.rust.FlexibleFloatSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import pl.cuyer.thedome.domain.rust.FlexibleFloatSerializer
 
 class FlexibleFloatSerializerTest {
     private val json = Json
