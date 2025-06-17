@@ -1,0 +1,74 @@
+openapi: 3.0.1
+info:
+  title: TheDome API
+  version: 1.0.0
+paths:
+  /servers:
+    get:
+      summary: List servers
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+      responses:
+        '200':
+          description: List of servers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServerInfo'
+components:
+  schemas:
+    ServerInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        wipe:
+          type: string
+          format: date-time
+        ranking:
+          type: number
+          format: double
+        modded:
+          type: boolean
+        player_count:
+          type: integer
+        server_capacity:
+          type: integer
+        map_name:
+          type: string
+        cycle:
+          type: number
+          format: double
+        server_flag:
+          type: string
+        region:
+          type: string
+        max_group:
+          type: integer
+        difficulty:
+          type: string
+        wipe_schedule:
+          type: string
+        is_official:
+          type: boolean
+        server_ip:
+          type: string
+        map_image:
+          type: string
+        description:
+          type: string
+        map_id:
+          type: string

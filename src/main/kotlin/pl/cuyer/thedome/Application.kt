@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.http.*
 import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.plugins.swagger.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -87,6 +88,7 @@ fun Application.module() {
                 .map { it.toServerInfo() }
             call.respond(servers)
         }
+        swaggerUI(path = "swagger")
     }
 }
 
