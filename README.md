@@ -13,7 +13,7 @@ Ensure MongoDB is accessible and set `MONGODB_URI` if needed. You can also set `
 Environment variables:
 
 - `MONGODB_URI` – MongoDB connection string
-- `FETCH_CRON` – cron expression for server fetch schedule (defaults to hourly)
+- `FETCH_CRON` – cron expression for server fetch schedule (defaults to every 10 minutes; uses seconds as the first field)
 - `API_KEY` – optional RustMaps API key
 - `PORT` – overrides the default port if implemented
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
