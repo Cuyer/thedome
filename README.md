@@ -23,13 +23,26 @@ Query servers with optional `page` and `size` parameters:
 GET http://localhost:8080/servers?page=1&size=20
 ```
 
-<<<<<<< codex/add-.editorconfig-with-kotlin-style
+## Docker
+
+Build the application distribution and image:
+
+```bash
+./gradlew installDist
+docker build -t thedome .
+```
+
+Run the container exposing port 8080:
+
+```bash
+docker run -p 8080:8080 thedome
+```
+
 ## Development
 
 Coding style is defined by the `.editorconfig` file at the repository root. Configure
 your editor to respect these settings when contributing.
-=======
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
->>>>>>> main
