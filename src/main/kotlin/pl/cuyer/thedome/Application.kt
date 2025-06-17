@@ -45,10 +45,14 @@ import pl.cuyer.thedome.domain.battlemetrics.fetchMapIcon
 import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
 import io.ktor.server.resources.*
 import pl.cuyer.thedome.resources.Servers
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
 
 
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
+    logger.info("Starting server on port $port")
     embeddedServer(Netty, port = port, module = Application::module).start(wait = true)
 }
 
@@ -93,6 +97,7 @@ fun Application.module() {
 
     val fetchCron = System.getenv("FETCH_CRON") ?: "* * * * *"
     val schedulerClient = MongoClient.create(mongoUri)
+    logger.info("Scheduling fetch task with cron expression '$fetchCron'")
 
     install(TaskScheduling) {
         mongoDb {
@@ -135,8 +140,11 @@ private suspend fun fetchServers(
     val servers = mutableListOf<BattlemetricsServerContent>()
     val apiKey = System.getenv("API_KEY") ?: ""
     var url: String? = "https://api.battlemetrics.com/servers?filter[game]=rust&sort=rank&page[size]=100"
+    logger.info("Fetching servers from Battlemetrics API")
     while (url != null) {
+        logger.info("Requesting page: $url")
         val page: BattlemetricsPage = client.get(url).body()
+        logger.info("Received ${'$'}{page.data.size} servers")
         servers += page.data.map { server ->
             val mapId = server.extractMapId()
             if (!mapId.isNullOrEmpty() && apiKey.isNotEmpty()) {
@@ -156,6 +164,7 @@ private suspend fun fetchServers(
     collection.deleteMany()
     if (servers.isNotEmpty()) {
         collection.insertMany(servers)
+        logger.info("Inserted ${'$'}{servers.size} servers into MongoDB")
     }
 }
 
