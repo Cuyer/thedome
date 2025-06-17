@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.0.21"
     kotlin("plugin.serialization") version "2.0.21"
     application
+    id("org.jetbrains.kotlinx.kover") version "0.7.5"
 }
 
 val ktorVersion = "3.2.0"
@@ -24,6 +25,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:$kmongoVersion")
     implementation("ch.qos.logback:logback-classic:$logback")
+    testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation(kotlin("test"))
 }
 
@@ -39,5 +41,20 @@ tasks.test {
     useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
+    }
+}
+
+koverReport {
+    filters {
+        excludes {
+            classes("pl.cuyer.thedome.domain.rust.*")
+            classes("pl.cuyer.thedome.domain.server.*")
+            classes("pl.cuyer.thedome.resources.*")
+            classes("pl.cuyer.thedome.ApplicationKt")
+        }
+        includes {
+            classes("pl.cuyer.thedome.domain.server.WipeSchedule")
+            classes("pl.cuyer.thedome.domain.battlemetrics.ServerExtensionsKt")
+        }
     }
 }
