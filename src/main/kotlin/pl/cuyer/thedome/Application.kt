@@ -38,7 +38,8 @@ import pl.cuyer.thedome.resources.Servers
 
 
 fun main() {
-    embeddedServer(Netty, port = 8080, module = Application::module).start(wait = true)
+    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
+    embeddedServer(Netty, port = port, module = Application::module).start(wait = true)
 }
 
 fun Application.module() {
