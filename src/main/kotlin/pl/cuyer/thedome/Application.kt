@@ -75,7 +75,6 @@ fun Application.module() {
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
 
-    val serversCollection by inject<org.litote.kmongo.coroutine.CoroutineCollection<BattlemetricsServerContent>>()
     val fetchService by inject<ServerFetchService>()
 
     val fetchCron = System.getenv("FETCH_CRON") ?: "0 */10 * * *"
