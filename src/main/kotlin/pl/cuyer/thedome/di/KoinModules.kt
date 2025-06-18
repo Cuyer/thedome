@@ -15,6 +15,7 @@ import org.koin.dsl.module
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
+import pl.cuyer.thedome.services.FiltersService
 
 val appModule = module {
     single<Json> { Json { ignoreUnknownKeys = true } }
@@ -49,4 +50,5 @@ val appModule = module {
 
     single { ServerFetchService(get(), get()) }
     single { ServersService(get()) }
+    single { FiltersService(get()) }
 }

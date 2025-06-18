@@ -79,6 +79,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServersResponse'
+  /filters/options:
+    get:
+      summary: Available filter options
+      responses:
+        '200':
+          description: Filter options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiltersOptions'
 components:
   schemas:
     ServerInfo:
@@ -138,3 +148,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ServerInfo'
+    FiltersOptions:
+      type: object
+      properties:
+        flags:
+          type: array
+          items:
+            type: string
+        max_ranking:
+          type: integer
+        max_player_count:
+          type: integer
+        max_group_limit:
+          type: integer
+        maps:
+          type: array
+          items:
+            type: string
+        regions:
+          type: array
+          items:
+            type: string
+        difficulty:
+          type: array
+          items:
+            type: string
+        wipe_schedules:
+          type: array
+          items:
+            type: string

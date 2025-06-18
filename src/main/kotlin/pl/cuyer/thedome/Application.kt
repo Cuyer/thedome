@@ -26,7 +26,9 @@ import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.resources.Servers
 import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
+import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.routes.ServersEndpoint
+import pl.cuyer.thedome.routes.FiltersEndpoint
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
@@ -98,10 +100,13 @@ fun Application.module() {
     }
 
     val serversService by inject<ServersService>()
+    val filtersService by inject<FiltersService>()
     val serversEndpoint = ServersEndpoint(serversService)
+    val filtersEndpoint = FiltersEndpoint(filtersService)
 
     routing {
         serversEndpoint.register(this)
+        filtersEndpoint.register(this)
         swaggerUI(path = "swagger")
     }
 }
