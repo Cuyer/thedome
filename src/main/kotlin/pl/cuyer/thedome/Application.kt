@@ -1,13 +1,10 @@
 package pl.cuyer.thedome
 
-import com.mongodb.client.model.Sorts
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import dev.inmo.krontab.builder.SchedulerBuilder
 import dev.inmo.krontab.builder.TimeBuilder
 import io.github.flaxoos.ktor.server.plugins.taskscheduling.TaskScheduling
 import io.github.flaxoos.ktor.server.plugins.taskscheduling.managers.lock.database.mongoDb
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -22,17 +19,18 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import org.litote.kmongo.coroutine.coroutine
-import org.litote.kmongo.reactivestreams.KMongo
+
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.resources.Servers
 import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.routes.ServersEndpoint
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
+import org.koin.ktor.plugin.Koin
+import org.koin.ktor.ext.inject
+import org.koin.logger.slf4jLogger
+import pl.cuyer.thedome.di.appModule
 
 private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
 
@@ -44,6 +42,10 @@ fun main() {
 }
 
 fun Application.module() {
+    install(Koin) {
+        slf4jLogger()
+        modules(appModule)
+    }
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
@@ -72,27 +74,9 @@ fun Application.module() {
     }
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
-    val mongoClient = KMongo.createClient(mongoUri).coroutine
-    val database = mongoClient.getDatabase("thedome")
-    val serversCollection = database.getCollection<BattlemetricsServerContent>("servers")
-    runBlocking {
-        serversCollection.createIndex("{ 'attributes.rank': 1 }")
-        serversCollection.createIndex("{ 'attributes.country': 1 }")
-        serversCollection.createIndex("{ 'attributes.details.rust_settings.timeZone': 1 }")
-        serversCollection.createIndex("{ 'attributes.details.rust_gamemode': 1 }")
-        serversCollection.createIndex("{ 'attributes.details.rust_type': 1 }")
-        serversCollection.createIndex("{ 'attributes.details.official': 1 }")
-        serversCollection.createIndex("{ 'attributes.details.rust_settings.groupLimit': 1 }")
-        serversCollection.createIndex("{ 'attributes.details.rust_last_wipe': 1 }")
-    }
 
-    val httpClient = HttpClient(CIO) {
-        install(ClientContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
-        }
-    }
-
-    val fetchService = ServerFetchService(httpClient, serversCollection)
+    val serversCollection by inject<org.litote.kmongo.coroutine.CoroutineCollection<BattlemetricsServerContent>>()
+    val fetchService by inject<ServerFetchService>()
 
     val fetchCron = System.getenv("FETCH_CRON") ?: "0 */10 * * *"
     val schedulerClient = MongoClient.create(mongoUri)
@@ -114,7 +98,7 @@ fun Application.module() {
         schedulerClient.close()
     }
 
-    val serversService = ServersService(serversCollection)
+    val serversService by inject<ServersService>()
     val serversEndpoint = ServersEndpoint(serversService)
 
     routing {

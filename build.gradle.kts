@@ -9,6 +9,7 @@ val ktorVersion = "3.2.0"
 val kmongoVersion = "4.11.0"
 val logback = "1.5.18"
 val ktorPluginsVersion = "2.2.1"
+val koinVersion = "3.5.3"
 
 repositories {
     mavenCentral()
@@ -33,6 +34,9 @@ dependencies {
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:$kmongoVersion")
     implementation(kotlin("reflect"))
     implementation("ch.qos.logback:logback-classic:$logback")
+    implementation("io.insert-koin:koin-core:$koinVersion")
+    implementation("io.insert-koin:koin-ktor:$koinVersion")
+    implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("io.mockk:mockk:1.13.9")
     testImplementation(kotlin("test"))
