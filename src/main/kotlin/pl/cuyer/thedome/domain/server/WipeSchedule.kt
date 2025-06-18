@@ -12,9 +12,9 @@ enum class WipeSchedule {
     companion object {
         /**
          * Picks a schedule based on the “weeks” flags:
-         *  - 1 flagged week → WEEKLY
-         *  - 5 flagged weeks → BIWEEKLY
-         *  - 10 flagged weeks → MONTHLY
+         *  - 1 flagged week → MONTHLY
+         *  - 5 flagged weeks → WEEKLY
+         *  - 10 flagged weeks → BIWEEKLY
          *  - anything else → null
          */
         fun from(wipes: List<Wipe>): WipeSchedule? {
