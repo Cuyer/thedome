@@ -31,7 +31,7 @@ class ServerFetchService(
             while (url != null) {
                 logger.info("Requesting page: $url")
                 val page: BattlemetricsPage = client.get(url).body()
-                logger.info("Received ${'$'}{page.data.size} servers")
+                logger.info("Received ${page.data.size} servers")
 
                 val pageServers = coroutineScope {
                     page.data.map { server ->
@@ -71,10 +71,10 @@ class ServerFetchService(
             val idsToKeep = servers.map { it.id }
             collection.deleteMany(Filters.nin("id", idsToKeep))
 
-            logger.info("Upserted ${'$'}{servers.size} servers and removed stale entries.")
+            logger.info("Upserted ${servers.size} servers and removed stale entries.")
 
         } catch (e: Exception) {
-            logger.error("Failed to fetch or update servers: ${'$'}{e.message}", e)
+            logger.error("Failed to fetch or update servers: ${e.message}", e)
         }
     }
 }
