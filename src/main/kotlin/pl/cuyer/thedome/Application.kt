@@ -1,19 +1,13 @@
 package pl.cuyer.thedome
 
-import com.mongodb.client.model.Filters
-import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.Sorts
-import com.mongodb.client.model.ReplaceOneModel
-import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import dev.inmo.krontab.builder.SchedulerBuilder
 import dev.inmo.krontab.builder.TimeBuilder
 import io.github.flaxoos.ktor.server.plugins.taskscheduling.TaskScheduling
 import io.github.flaxoos.ktor.server.plugins.taskscheduling.managers.lock.database.mongoDb
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -28,17 +22,14 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.resources.Servers
+import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
@@ -101,6 +92,8 @@ fun Application.module() {
         }
     }
 
+    val fetchService = ServerFetchService(httpClient, serversCollection)
+
     val fetchCron = System.getenv("FETCH_CRON") ?: "0 */10 * * *"
     val schedulerClient = MongoClient.create(mongoUri)
     logger.info("Scheduling fetch task with cron expression '$fetchCron'")
@@ -113,7 +106,7 @@ fun Application.module() {
         task {
             name = "fetch-servers"
             kronSchedule = { applyCron(fetchCron) }
-            task = { fetchServers(httpClient, serversCollection) }
+            task = { fetchService.fetchServers() }
         }
     }
 
@@ -130,68 +123,6 @@ fun Application.module() {
     }
 }
 
-private suspend fun fetchServers(
-    client: HttpClient,
-    collection: CoroutineCollection<BattlemetricsServerContent>
-) {
-    val servers = mutableListOf<BattlemetricsServerContent>()
-    val apiKey = System.getenv("API_KEY") ?: ""
-    val iconCache = mutableMapOf<String, String?>()
-    var url: String? = "https://api.battlemetrics.com/servers?sort=rank&filter[game]=rust&page[size]=100&filter[status]=online,offline"
-    logger.info("Fetching servers from Battlemetrics API")
-
-    try {
-        while (url != null) {
-            logger.info("Requesting page: $url")
-            val page: BattlemetricsPage = client.get(url).body()
-            logger.info("Received ${page.data.size} servers")
-
-            val pageServers = coroutineScope {
-                page.data.map { server ->
-                    async {
-                        val mapId = server.extractMapId()
-                        val iconUrl = if (!mapId.isNullOrEmpty() && apiKey.isNotEmpty() && server.attributes.status != "offline") {
-                            iconCache.getOrPut(mapId) { client.fetchMapIcon(mapId, apiKey) }
-                        } else null
-
-                        val rustMaps = server.attributes.details?.rustMaps
-                        val details = server.attributes.details
-                        val newRustMaps = if (iconUrl != null) rustMaps?.copy(imageIconUrl = iconUrl) else rustMaps
-                        val newDetails = details?.copy(rustMaps = newRustMaps)
-                        server.copy(attributes = server.attributes.copy(details = newDetails))
-                    }
-                }.awaitAll()
-            }
-            servers += pageServers
-
-            url = page.links?.next
-        }
-
-        if (servers.isEmpty()) {
-            logger.warn("No servers fetched. Skipping database update.")
-            return
-        }
-
-        // Upsert all servers in bulk
-        val replaceOperations = servers.map { server ->
-            ReplaceOneModel(
-                Filters.eq("id", server.id),
-                server,
-                ReplaceOptions().upsert(true)
-            )
-        }
-        collection.bulkWrite(replaceOperations, BulkWriteOptions().ordered(false))
-
-        // Delete stale entries (not in the fetched list)
-        val idsToKeep = servers.map { it.id }
-        collection.deleteMany(Filters.nin("id", idsToKeep))
-
-        logger.info("Upserted ${servers.size} servers and removed stale entries.")
-
-    } catch (e: Exception) {
-        logger.error("Failed to fetch or update servers: ${e.message}", e)
-    }
-}
 
 private fun SchedulerBuilder.applyCron(expr: String) {
     val parts = expr.trim().split(" ").filter { it.isNotEmpty() }

@@ -34,6 +34,7 @@ dependencies {
     implementation(kotlin("reflect"))
     implementation("ch.qos.logback:logback-classic:$logback")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
+    testImplementation("io.mockk:mockk:1.13.9")
     testImplementation(kotlin("test"))
 }
 
