@@ -53,6 +53,6 @@ class FiltersServiceTest {
         assertEquals(listOf(Maps.BARREN, Maps.PROCEDURAL), options.maps)
         assertEquals(listOf(Region.AMERICA, Region.EUROPE), options.regions)
         assertEquals(listOf(Difficulty.SOFTCORE, Difficulty.VANILLA), options.difficulty)
-        assertEquals(listOf(WipeSchedule.BIWEEKLY, WipeSchedule.MONTHLY), options.wipeSchedules)
+        assertEquals(listOf(WipeSchedule.MONTHLY, WipeSchedule.WEEKLY), options.wipeSchedules)
     }
 }

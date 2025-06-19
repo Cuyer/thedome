@@ -24,14 +24,14 @@ class WipeScheduleTest {
     }
 
     @Test
-    fun `ten flags returns BIWEEKLY`() {
-        val wipes = listOf(Wipe(weeks = List(10) { 1 }))
+    fun `alternating flags return BIWEEKLY`() {
+        val wipes = List(4) { Wipe(weeks = listOf(1,0,1,0)) }
         assertEquals(WipeSchedule.BIWEEKLY, WipeSchedule.from(wipes))
     }
 
     @Test
     fun `other flag counts return null`() {
-        val wipes = listOf(Wipe(weeks = listOf(1,1,1)))
+        val wipes = listOf(Wipe(weeks = listOf(1,0,0,0,1)))
         assertNull(WipeSchedule.from(wipes))
     }
 }
