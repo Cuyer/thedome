@@ -41,10 +41,17 @@ class ServerFetchService(
                                 iconCache.getOrPut(mapId) { client.fetchMapIcon(mapId, apiKey) }
                             } else null
 
-                            val rustMaps = server.attributes.details?.rustMaps
                             val details = server.attributes.details
+                            val rustMaps = details?.rustMaps
                             val newRustMaps = if (iconUrl != null) rustMaps?.copy(imageIconUrl = iconUrl) else rustMaps
-                            val newDetails = details?.copy(rustMaps = newRustMaps)
+                            val newGamemode = when (details?.rustGamemode?.lowercase()) {
+                                "rust" -> "vanilla"
+                                else -> details?.rustGamemode
+                            }
+                            val newDetails = details?.copy(
+                                rustMaps = newRustMaps,
+                                rustGamemode = newGamemode
+                            )
                             server.copy(attributes = server.attributes.copy(details = newDetails))
                         }
                     }.awaitAll()
