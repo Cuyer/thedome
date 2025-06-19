@@ -92,8 +92,8 @@ class ServerExtensionsAdditionalTest {
         assertEquals(true, info.isOfficial)
         assertEquals("1.1.1.1:28015", info.serverIp)
         assertEquals("icon.png", info.mapImage)
-        assertEquals("online", info.status)
-        assertEquals("map", info.wipeType)
+        assertEquals(ServerStatus.ONLINE, info.status)
+        assertEquals(WipeType.MAP, info.wipeType)
     }
 
     @Test
