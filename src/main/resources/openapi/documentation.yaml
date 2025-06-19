@@ -101,6 +101,8 @@ components:
         wipe:
           type: string
           format: date-time
+        status:
+          type: string
         ranking:
           type: integer
         modded:
@@ -131,6 +133,8 @@ components:
         map_image:
           type: string
         description:
+          type: string
+        wipe_type:
           type: string
     ServersResponse:
       type: object

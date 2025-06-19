@@ -66,6 +66,7 @@ class ServerExtensionsAdditionalTest {
             name = "Test",
             ip = "1.1.1.1",
             port = 28015,
+            status = "online",
             players = 10,
             maxPlayers = 50,
             rank = 1,
@@ -91,5 +92,16 @@ class ServerExtensionsAdditionalTest {
         assertEquals(true, info.isOfficial)
         assertEquals("1.1.1.1:28015", info.serverIp)
         assertEquals("icon.png", info.mapImage)
+        assertEquals("online", info.status)
+        assertEquals("map", info.wipeType)
+    }
+
+    @Test
+    fun `community rust type is considered modded`() {
+        val details = Details(rustType = "community")
+        val attributes = Attributes(id = "1", details = details)
+        val server = BattlemetricsServerContent(attributes = attributes, id = "1")
+        val info = server.toServerInfo()
+        assertEquals(true, info.modded)
     }
 }
