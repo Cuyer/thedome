@@ -77,7 +77,7 @@ class ServerExtensionsAdditionalTest {
         assertEquals(1L, info.id)
         assertEquals("Test", info.name)
         assertEquals(Instant.parse("2024-01-01T00:00:00Z"), info.wipe)
-        assertEquals(1.0, info.ranking)
+        assertEquals(1, info.ranking)
         assertEquals(true, info.modded)
         assertEquals(10L, info.playerCount)
         assertEquals(50L, info.serverCapacity)

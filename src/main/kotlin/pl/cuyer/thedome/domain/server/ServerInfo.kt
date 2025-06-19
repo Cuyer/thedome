@@ -9,7 +9,7 @@ data class ServerInfo(
     val id: Long? = null,
     val name: String? = null,
     val wipe: Instant? = null,
-    val ranking: Double? = null,
+    val ranking: Int? = null,
     val modded: Boolean? = null,
     @SerialName("player_count")
     val playerCount: Long? = null,

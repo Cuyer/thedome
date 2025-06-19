@@ -10,7 +10,7 @@ class FiltersService(private val collection: CoroutineCollection<BattlemetricsSe
         val servers = collection.find().toList().map { it.toServerInfo() }
 
         val flags = servers.mapNotNull { it.serverFlag }.distinct().sortedBy { it.name }
-        val maxRanking = servers.mapNotNull { it.ranking?.toInt() }.maxOrNull() ?: 0
+        val maxRanking = servers.mapNotNull { it.ranking }.maxOrNull() ?: 0
         val maxPlayerCount = servers.mapNotNull { it.playerCount?.toInt() }.maxOrNull() ?: 0
         val maxGroupLimit = servers.mapNotNull { it.maxGroup?.toInt() }.maxOrNull() ?: 0
         val maps = servers.mapNotNull { it.mapName }.distinct().sortedBy { it.name }
