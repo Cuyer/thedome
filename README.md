@@ -51,6 +51,10 @@ The response includes the requested page of servers and pagination fields:
   "servers": [ ... ]
 }
 ```
+Each server entry also exposes:
+
+- `status` – the current server status
+- `wipe_type` – type of the most recent wipe
 
 ## Docker
 

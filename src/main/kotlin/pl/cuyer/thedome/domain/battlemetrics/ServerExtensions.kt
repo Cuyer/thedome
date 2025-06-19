@@ -32,8 +32,11 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         id = id.toLongOrNull(),
         name = attributes.name,
         wipe = attributes.details?.rustLastWipe?.let(Instant::parse),
+        status = attributes.status,
         ranking = attributes.rank,
-        modded = attributes.details?.rustType?.contains("modded"),
+        modded = attributes.details?.rustType?.let {
+            it.contains("modded", ignoreCase = true) || it.contains("community", ignoreCase = true)
+        },
         playerCount = attributes.players?.toLong(),
         serverCapacity = attributes.maxPlayers?.toLong(),
         mapName = attributes.details?.map?.substringBefore(" ")?.uppercase()?.let {
@@ -66,6 +69,7 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         serverIp = ipPort(attributes.ip ?: "", attributes.port?.toString() ?: ""),
         mapImage = attributes.details?.rustMaps?.imageIconUrl,
         description = attributes.details?.rustDescription,
+        wipeType = attributes.details?.rustWipes?.firstOrNull()?.type,
     )
 
 private fun calculateCycle(wipes: List<RustWipe>): Double? {
