@@ -102,8 +102,7 @@ components:
           type: string
           format: date-time
         ranking:
-          type: number
-          format: double
+          type: integer
         modded:
           type: boolean
         player_count:
