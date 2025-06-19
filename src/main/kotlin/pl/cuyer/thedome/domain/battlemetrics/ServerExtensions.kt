@@ -32,7 +32,13 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         id = id.toLongOrNull(),
         name = attributes.name,
         wipe = attributes.details?.rustLastWipe?.let(Instant::parse),
-        status = attributes.status,
+        status = attributes.status?.uppercase()?.let {
+            try {
+                ServerStatus.valueOf(it)
+            } catch (e: Exception) {
+                null
+            }
+        },
         ranking = attributes.rank,
         modded = attributes.details?.rustType?.let {
             it.contains("modded", ignoreCase = true) || it.contains("community", ignoreCase = true)
@@ -69,7 +75,13 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         serverIp = ipPort(attributes.ip ?: "", attributes.port?.toString() ?: ""),
         mapImage = attributes.details?.rustMaps?.imageIconUrl,
         description = attributes.details?.rustDescription,
-        wipeType = attributes.details?.rustWipes?.firstOrNull()?.type,
+        wipeType = attributes.details?.rustWipes?.firstOrNull()?.type?.uppercase()?.let {
+            try {
+                WipeType.valueOf(it)
+            } catch (e: Exception) {
+                null
+            }
+        },
     )
 
 private fun calculateCycle(wipes: List<RustWipe>): Double? {

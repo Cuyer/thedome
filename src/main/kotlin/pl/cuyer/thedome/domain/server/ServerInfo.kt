@@ -9,7 +9,7 @@ data class ServerInfo(
     val id: Long? = null,
     val name: String? = null,
     val wipe: Instant? = null,
-    val status: String? = null,
+    val status: ServerStatus? = null,
     val ranking: Int? = null,
     val modded: Boolean? = null,
     @SerialName("player_count")
@@ -33,5 +33,5 @@ data class ServerInfo(
     val mapImage: String? = null,
     val description: String? = null,
     @SerialName("wipe_type")
-    val wipeType: String? = null
+    val wipeType: WipeType? = null
 )
