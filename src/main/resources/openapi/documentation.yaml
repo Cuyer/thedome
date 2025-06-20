@@ -72,6 +72,11 @@ paths:
           schema:
             type: string
           required: false
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
       responses:
         '200':
           description: List of servers
