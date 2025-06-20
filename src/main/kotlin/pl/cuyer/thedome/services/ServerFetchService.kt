@@ -44,13 +44,8 @@ class ServerFetchService(
                             val details = server.attributes.details
                             val rustMaps = details?.rustMaps
                             val newRustMaps = if (iconUrl != null) rustMaps?.copy(imageIconUrl = iconUrl) else rustMaps
-                            val newGamemode = when (details?.rustGamemode?.lowercase()) {
-                                "rust" -> "vanilla"
-                                else -> details?.rustGamemode
-                            }
                             val newDetails = details?.copy(
-                                rustMaps = newRustMaps,
-                                rustGamemode = newGamemode
+                                rustMaps = newRustMaps
                             )
                             server.copy(attributes = server.attributes.copy(details = newDetails))
                         }
