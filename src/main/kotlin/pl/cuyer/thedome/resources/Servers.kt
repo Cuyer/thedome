@@ -24,5 +24,6 @@ data class Servers(
     val ranking: Int? = null,
     val playerCount: Int? = null,
     val groupLimit: Int? = null,
-    val order: Order? = null
+    val order: Order? = null,
+    val name: String? = null
 )
