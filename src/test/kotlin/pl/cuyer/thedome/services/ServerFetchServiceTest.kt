@@ -52,5 +52,4 @@ class ServerFetchServiceTest {
         assertEquals(setOf("1", "2"), ids)
         coVerify(exactly = 1) { collection.deleteMany(any<Bson>(), any<DeleteOptions>()) }
     }
-
 }
