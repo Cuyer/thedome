@@ -8,6 +8,7 @@ import pl.cuyer.thedome.domain.rust.MapResponse
 import pl.cuyer.thedome.domain.rust.RustWipe
 import pl.cuyer.thedome.domain.server.*
 import kotlinx.datetime.Instant
+import kotlin.time.DurationUnit
 
 /** strips the map-ID out of the thumbnail URL */
 fun BattlemetricsServerContent.extractMapId(): String? =
@@ -98,7 +99,7 @@ private fun calculateCycle(wipes: List<RustWipe>): Double? {
     val avgInterval = intervals
         .reduce { sum, d -> sum + d } / intervals.size
 
-    return avgInterval.inWholeDays.toDouble()
+    return avgInterval.toDouble(DurationUnit.SECONDS) / 86_400
 }
 
 private fun ipPort(ip: String, port: String): String = "$ip:$port"
