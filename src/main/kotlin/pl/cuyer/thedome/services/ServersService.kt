@@ -41,6 +41,10 @@ class ServersService(private val collection: CoroutineCollection<BattlemetricsSe
         params.ranking?.let { filters += Filters.lte("attributes.rank", it) }
         params.playerCount?.let { filters += Filters.gte("attributes.players", it) }
         params.groupLimit?.let { filters += Filters.eq("attributes.details.rust_settings.groupLimit", it) }
+        params.name?.let {
+            val pattern = Pattern.compile(".*${Pattern.quote(it)}.*", Pattern.CASE_INSENSITIVE)
+            filters += Filters.regex("attributes.name", pattern)
+        }
 
         val sortField = when (params.order) {
             Order.RANK -> "attributes.rank"

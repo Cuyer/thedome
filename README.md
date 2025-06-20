@@ -32,12 +32,13 @@ the following parameters can be used:
 - `playerCount` – min player count
 - `groupLimit` – maximum group limit
 - `order` – ordering field (`WIPE`, `RANK`, `PLAYER_COUNT`; defaults to `WIPE`)
+- `name` – substring match on server name
 
 
 Example request:
 
 ```
-GET http://localhost:8080/servers?page=1&size=20&region=EUROPE&order=PLAYER_COUNT
+GET http://localhost:8080/servers?page=1&size=20&region=EUROPE&order=PLAYER_COUNT&name=official
 ```
 
 The response includes the requested page of servers and pagination fields:
