@@ -92,8 +92,8 @@ class ServerExtensionsAdditionalTest {
         assertEquals(true, info.isOfficial)
         assertEquals("1.1.1.1:28015", info.serverIp)
         assertEquals("icon.png", info.mapImage)
-        assertEquals("online", info.status)
-        assertEquals("map", info.wipeType)
+        assertEquals(ServerStatus.ONLINE, info.status)
+        assertEquals(WipeType.MAP, info.wipeType)
     }
 
     @Test
@@ -103,5 +103,19 @@ class ServerExtensionsAdditionalTest {
         val server = BattlemetricsServerContent(attributes = attributes, id = "1")
         val info = server.toServerInfo()
         assertEquals(true, info.modded)
+    }
+
+    @Test
+    fun `calculateCycle handles fractional days`() {
+        val wipes = listOf(
+            RustWipe(timestamp = "2024-01-01T00:00:00Z", type = "map"),
+            RustWipe(timestamp = "2024-01-03T00:00:00Z", type = "map"),
+            RustWipe(timestamp = "2024-01-04T12:00:00Z", type = "map")
+        )
+        val details = Details(rustWipes = wipes)
+        val attributes = Attributes(id = "1", details = details)
+        val server = BattlemetricsServerContent(attributes = attributes, id = "1")
+        val info = server.toServerInfo()
+        assertEquals(1.75, info.cycle)
     }
 }
