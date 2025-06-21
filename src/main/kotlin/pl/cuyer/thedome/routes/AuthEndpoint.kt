@@ -63,11 +63,6 @@ class AuthEndpoint(private val service: AuthService) {
                         call.respond(HttpStatusCode.Unauthorized)
                     }
                 }
-                post("/logout") {
-                    val req = call.receive<RefreshRequest>()
-                    service.logout(req.refreshToken)
-                    call.respond(HttpStatusCode.OK)
-                }
             }
         }
     }

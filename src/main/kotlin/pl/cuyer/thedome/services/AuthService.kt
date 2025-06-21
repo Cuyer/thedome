@@ -48,7 +48,7 @@ class AuthService(
         collection.updateOne(User::username eq newUsername, setValue(User::refreshToken, refresh))
         return TokenPair(generateAccessToken(newUsername), refresh)
     }
-
+    
     suspend fun login(username: String, password: String): TokenPair? {
         val user = collection.findOne(User::username eq username) ?: return null
         if (!BCrypt.checkpw(password, user.passwordHash)) return null
@@ -62,10 +62,6 @@ class AuthService(
         val newRefresh = generateRefreshToken()
         collection.updateOne(User::username eq user.username, setValue(User::refreshToken, newRefresh))
         return TokenPair(generateAccessToken(user.username), newRefresh)
-    }
-
-    suspend fun logout(refreshToken: String) {
-        collection.updateOne(User::refreshToken eq refreshToken, setValue(User::refreshToken, null))
     }
 
     private fun generateAccessToken(username: String): String {

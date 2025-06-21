@@ -52,6 +52,7 @@ Authentication is handled via JWT. Anonymous users can obtain a short-lived acce
 curl -X POST http://localhost:8080/auth/anonymous
 ```
 
+
 Anonymous tokens are rate limited to 60 requests per minute and cannot be refreshed. To convert an anonymous user into a registered account without losing data, send the anonymous token to `/auth/upgrade` with new credentials:
 
 ```bash

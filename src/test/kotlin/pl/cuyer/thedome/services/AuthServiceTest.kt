@@ -24,7 +24,6 @@ class AuthServiceTest {
         assertTrue(result.accessToken.isNotEmpty())
         coVerify { collection.insertOne(match { it.username.startsWith("anon-") && it.refreshToken == null }, any<InsertOneOptions>()) }
     }
-
     @Test
     fun `upgradeAnonymous converts user`() = runBlocking {
         val collection = mockk<CoroutineCollection<User>>()
