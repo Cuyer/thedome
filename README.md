@@ -4,7 +4,7 @@ This project uses Ktor with MongoDB. The service periodically pulls Rust servers
 
 ## Running
 
-Ensure MongoDB is accessible and set `MONGODB_URI` if needed. You can also set `PORT` to change the listening port (defaults to `8080`). Then start the server:
+Ensure MongoDB is accessible and set `MONGODB_URI` if needed. You can also set `PORT` to change the listening port (defaults to `8080`). The application creates the necessary MongoDB indexes on startup. Then start the server:
 
 ```
 ./gradlew run

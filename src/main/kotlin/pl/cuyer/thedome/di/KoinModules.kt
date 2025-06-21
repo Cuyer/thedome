@@ -38,6 +38,8 @@ val appModule = module {
         runBlocking {
             collection.createIndex("{ 'attributes.rank': 1 }")
             collection.createIndex("{ 'attributes.country': 1 }")
+            collection.createIndex("{ 'attributes.players': 1 }")
+            collection.createIndex("{ 'attributes.details.map': 1 }")
             collection.createIndex("{ 'attributes.details.rust_settings.timeZone': 1 }")
             collection.createIndex("{ 'attributes.details.rust_gamemode': 1 }")
             collection.createIndex("{ 'attributes.details.rust_type': 1 }")
