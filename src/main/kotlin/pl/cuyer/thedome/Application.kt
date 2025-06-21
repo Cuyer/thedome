@@ -33,6 +33,7 @@ import pl.cuyer.thedome.services.AuthService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
 import pl.cuyer.thedome.routes.AuthEndpoint
+import pl.cuyer.thedome.plugins.AnonymousRateLimit
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
@@ -103,6 +104,10 @@ fun Application.module() {
                 } else null
             }
         }
+    }
+
+    install(AnonymousRateLimit) {
+        requestsPerMinute = 60
     }
 
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"

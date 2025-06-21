@@ -123,6 +123,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/AccessToken'
 
+  /auth/upgrade:
+    post:
+      summary: Upgrade anonymous account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpgradeRequest'
+      responses:
+        '200':
+          description: Authentication tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '409':
+          description: Username already exists
+
   /auth/register:
     post:
       summary: Register user
@@ -331,4 +351,11 @@ components:
       type: object
       properties:
         accessToken:
+          type: string
+    UpgradeRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
           type: string
