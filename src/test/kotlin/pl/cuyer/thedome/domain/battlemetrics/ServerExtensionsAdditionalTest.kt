@@ -62,7 +62,7 @@ class ServerExtensionsAdditionalTest {
         val rustMaps = RustMaps(
             thumbnailUrl = "https://example.com/maps/abc/thumbnail.png",
             imageIconUrl = "icon.png",
-            seed = 123,
+            seed = 123L,
             size = 4000,
             monumentCount = 12
         )
@@ -75,7 +75,7 @@ class ServerExtensionsAdditionalTest {
             rustMaps = rustMaps,
             rustWipes = wipes,
             official = true,
-            rustWorldSeed = 123,
+            rustWorldSeed = 123L,
             rustWorldSize = 4000,
             rustFpsAvg = 25.5
         )
@@ -117,9 +117,8 @@ class ServerExtensionsAdditionalTest {
         assertEquals(0.5f, info.decay)
         assertEquals(1.0, info.upkeep)
         assertEquals(3, info.rates)
-        assertEquals(123, info.seed)
+        assertEquals(123L, info.seed)
         assertEquals(4000, info.mapSize)
-        assertEquals(25.5, info.entityCount)
         assertEquals(12, info.monuments)
     }
 

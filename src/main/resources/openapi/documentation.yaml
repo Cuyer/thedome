@@ -77,51 +77,6 @@ paths:
           schema:
             type: string
           required: false
-        - in: query
-          name: blueprints
-          schema:
-            type: string
-          required: false
-        - in: query
-          name: kits
-          schema:
-            type: string
-          required: false
-        - in: query
-          name: decay
-          schema:
-            type: number
-          required: false
-        - in: query
-          name: upkeep
-          schema:
-            type: number
-          required: false
-        - in: query
-          name: rates
-          schema:
-            type: integer
-          required: false
-        - in: query
-          name: seed
-          schema:
-            type: integer
-          required: false
-        - in: query
-          name: mapSize
-          schema:
-            type: integer
-          required: false
-        - in: query
-          name: entityCount
-          schema:
-            type: number
-          required: false
-        - in: query
-          name: monuments
-          schema:
-            type: integer
-          required: false
       responses:
         '200':
           description: List of servers
@@ -202,9 +157,6 @@ components:
           type: integer
         map_size:
           type: integer
-        entity_count:
-          type: number
-          format: double
         monuments:
           type: integer
     ServersResponse:

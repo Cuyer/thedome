@@ -24,7 +24,7 @@ data class RustMaps(
     @SerialName("rivers")
     val rivers: Int? = null,
     @SerialName("seed")
-    val seed: Int? = null,
+    val seed: Long? = null,
     @SerialName("size")
     val size: Int? = null,
     @SerialName("thumbnailUrl")

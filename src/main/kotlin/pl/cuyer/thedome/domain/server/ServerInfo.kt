@@ -39,7 +39,7 @@ data class ServerInfo(
     val decay: Float? = null,
     val upkeep: Double? = null,
     val rates: Int? = null,
-    val seed: Int? = null,
+    val seed: Long? = null,
     @SerialName("map_size")
     val mapSize: Int? = null,
     @SerialName("entity_count")

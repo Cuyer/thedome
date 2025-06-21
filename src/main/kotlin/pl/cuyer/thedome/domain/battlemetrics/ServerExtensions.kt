@@ -88,9 +88,8 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         decay = attributes.details?.rustSettings?.decay,
         upkeep = attributes.details?.rustSettings?.upkeep,
         rates = attributes.details?.rustSettings?.rates?.gather?.toInt(),
-        seed = attributes.details?.rustWorldSeed?.toInt() ?: attributes.details?.rustMaps?.seed,
+        seed = attributes.details?.rustWorldSeed ?: attributes.details?.rustMaps?.seed,
         mapSize = attributes.details?.rustWorldSize ?: attributes.details?.rustMaps?.size,
-        entityCount = attributes.details?.rustFpsAvg,
         monuments = attributes.details?.rustMaps?.monumentCount,
     )
 

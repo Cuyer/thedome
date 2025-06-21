@@ -25,14 +25,5 @@ data class Servers(
     val playerCount: Int? = null,
     val groupLimit: Int? = null,
     val order: Order? = null,
-    val name: String? = null,
-    val blueprints: String? = null,
-    val kits: String? = null,
-    val decay: Float? = null,
-    val upkeep: Float? = null,
-    val rates: Int? = null,
-    val seed: Int? = null,
-    val mapSize: Int? = null,
-    val entityCount: Double? = null,
-    val monuments: Int? = null,
+    val name: String? = null
 )

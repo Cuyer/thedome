@@ -40,7 +40,6 @@ the following parameters can be used:
 - `rates` – gather rate
 - `seed` – world seed
 - `mapSize` – map size
-- `entityCount` – entity count
 - `monuments` – monument count
 
 
