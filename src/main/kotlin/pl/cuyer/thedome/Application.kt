@@ -105,6 +105,9 @@ fun Application.module() {
     val filtersEndpoint = FiltersEndpoint(filtersService)
 
     routing {
+        get("/") {
+            call.respondText("TheDome API")
+        }
         serversEndpoint.register(this)
         filtersEndpoint.register(this)
         swaggerUI(path = "swagger")
