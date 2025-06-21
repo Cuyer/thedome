@@ -83,6 +83,15 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
                 null
             }
         },
+        blueprints = attributes.details?.rustSettings?.blueprints,
+        kits = attributes.details?.rustSettings?.kits,
+        decay = attributes.details?.rustSettings?.decay,
+        upkeep = attributes.details?.rustSettings?.upkeep,
+        rates = attributes.details?.rustSettings?.rates?.gather?.toInt(),
+        seed = attributes.details?.rustWorldSeed?.toInt() ?: attributes.details?.rustMaps?.seed,
+        mapSize = attributes.details?.rustWorldSize ?: attributes.details?.rustMaps?.size,
+        entityCount = attributes.details?.rustFpsAvg,
+        monuments = attributes.details?.rustMaps?.monumentCount,
     )
 
 private fun calculateCycle(wipes: List<RustWipe>): Double? {
