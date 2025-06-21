@@ -60,7 +60,7 @@ curl -X POST http://localhost:8080/auth/login \
   -d '{"username":"user","password":"password"}'
 ```
 
-Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. The `refreshToken` can be sent to `/auth/refresh` to obtain new tokens or `/auth/logout` to invalidate it.
+Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. The `refreshToken` can be sent to `/auth/refresh` to obtain new tokens.
 
 
 Example request:
