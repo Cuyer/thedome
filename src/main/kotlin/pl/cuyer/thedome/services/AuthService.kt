@@ -7,6 +7,7 @@ import org.litote.kmongo.eq
 import org.litote.kmongo.setValue
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.domain.auth.TokenPair
+import pl.cuyer.thedome.domain.auth.AccessToken
 import java.util.Date
 import java.util.UUID
 import org.mindrot.jbcrypt.BCrypt
@@ -27,6 +28,13 @@ class AuthService(
         val user = User(username = username, passwordHash = hash, refreshToken = refresh)
         collection.insertOne(user)
         return TokenPair(generateAccessToken(username), refresh)
+    }
+
+    suspend fun registerAnonymous(): AccessToken {
+        val username = "anon-${UUID.randomUUID()}"
+        val user = User(username = username, passwordHash = "", refreshToken = null)
+        collection.insertOne(user)
+        return AccessToken(generateAccessToken(username))
     }
 
     suspend fun login(username: String, password: String): TokenPair? {
