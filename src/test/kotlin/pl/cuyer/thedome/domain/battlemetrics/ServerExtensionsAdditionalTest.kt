@@ -49,8 +49,23 @@ class ServerExtensionsAdditionalTest {
             RustWipe(timestamp = "2024-01-01T00:00:00Z", type = "map"),
             RustWipe(timestamp = "2024-01-04T00:00:00Z", type = "map")
         )
-        val settings = RustSettings(timezone = "Europe/London", groupLimit = 5, wipes = listOf(Wipe(weeks = listOf(1))))
-        val rustMaps = RustMaps(thumbnailUrl = "https://example.com/maps/abc/thumbnail.png", imageIconUrl = "icon.png")
+        val settings = RustSettings(
+            timezone = "Europe/London",
+            groupLimit = 5,
+            wipes = listOf(Wipe(weeks = listOf(1))),
+            blueprints = true,
+            kits = true,
+            decay = 0.5f,
+            upkeep = 1.0,
+            rates = Rates(gather = 3f)
+        )
+        val rustMaps = RustMaps(
+            thumbnailUrl = "https://example.com/maps/abc/thumbnail.png",
+            imageIconUrl = "icon.png",
+            seed = 123,
+            size = 4000,
+            monumentCount = 12
+        )
         val details = Details(
             map = "Procedural Map",
             rustLastWipe = "2024-01-01T00:00:00Z",
@@ -59,7 +74,10 @@ class ServerExtensionsAdditionalTest {
             rustSettings = settings,
             rustMaps = rustMaps,
             rustWipes = wipes,
-            official = true
+            official = true,
+            rustWorldSeed = 123,
+            rustWorldSize = 4000,
+            rustFpsAvg = 25.5
         )
         val attributes = Attributes(
             id = "1",
@@ -94,6 +112,15 @@ class ServerExtensionsAdditionalTest {
         assertEquals("icon.png", info.mapImage)
         assertEquals(ServerStatus.ONLINE, info.status)
         assertEquals(WipeType.MAP, info.wipeType)
+        assertEquals(true, info.blueprints)
+        assertEquals(true, info.kits)
+        assertEquals(0.5f, info.decay)
+        assertEquals(1.0, info.upkeep)
+        assertEquals(3, info.rates)
+        assertEquals(123, info.seed)
+        assertEquals(4000, info.mapSize)
+        assertEquals(25.5, info.entityCount)
+        assertEquals(12, info.monuments)
     }
 
     @Test
