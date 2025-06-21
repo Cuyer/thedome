@@ -13,6 +13,7 @@ services:
       # FETCH_CRON: "*/10 * * * * *"  # Uncomment and set as needed
       # API_KEY: ""  # Optional, set if you have a RustMaps API key
       # PORT: 8080  # Override if you want a different port
+      # JWT_SECRET: secret
     depends_on:
       - mongo
     networks:
