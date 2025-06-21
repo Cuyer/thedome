@@ -75,6 +75,8 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         isOfficial = attributes.details?.official,
         serverIp = ipPort(attributes.ip ?: "", attributes.port?.toString() ?: ""),
         mapImage = attributes.details?.rustMaps?.imageIconUrl,
+        mapUrl = attributes.details?.rustMaps?.mapUrl,
+        headerImage = attributes.details?.rustHeaderimage,
         description = attributes.details?.rustDescription,
         wipeType = attributes.details?.rustWipes?.firstOrNull()?.type?.uppercase()?.let {
             try {

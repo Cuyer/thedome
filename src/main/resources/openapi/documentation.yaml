@@ -154,6 +154,10 @@ components:
           type: string
         map_image:
           type: string
+        map_url:
+          type: string
+        header_image:
+          type: string
         description:
           type: string
         wipe_type:
