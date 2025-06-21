@@ -25,6 +25,9 @@ class AuthEndpoint(private val service: AuthService) {
                         call.respond(HttpStatusCode.Conflict)
                     }
                 }
+                post("/anonymous") {
+                    call.respond(service.registerAnonymous())
+                }
                 post("/login") {
                     val req = call.receive<LoginRequest>()
                     val tokens = service.login(req.username, req.password)
