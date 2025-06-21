@@ -39,6 +39,7 @@ dependencies {
     implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("io.mockk:mockk:1.13.9")
+    testRuntimeOnly("io.mockk:mockk-agent-jvm:1.13.9")
     testImplementation(kotlin("test"))
 }
 
