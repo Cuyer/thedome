@@ -3,6 +3,23 @@ info:
   title: TheDome API
   version: 1.0.0
 paths:
+  /:
+    get:
+      summary: Root endpoint
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  docs:
+                    type: string
   /servers:
     get:
       summary: List servers
