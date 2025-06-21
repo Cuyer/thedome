@@ -75,6 +75,8 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         isOfficial = attributes.details?.official,
         serverIp = ipPort(attributes.ip ?: "", attributes.port?.toString() ?: ""),
         mapImage = attributes.details?.rustMaps?.imageIconUrl,
+        mapUrl = attributes.details?.rustMaps?.url,
+        headerImage = attributes.details?.rustHeaderimage,
         description = attributes.details?.rustDescription,
         wipeType = attributes.details?.rustWipes?.firstOrNull()?.type?.uppercase()?.let {
             try {
@@ -91,6 +93,10 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         seed = attributes.details?.rustWorldSeed ?: attributes.details?.rustMaps?.seed,
         mapSize = attributes.details?.rustWorldSize ?: attributes.details?.rustMaps?.size,
         monuments = attributes.details?.rustMaps?.monumentCount,
+        averageFps = attributes.details?.rustFpsAvg?.toLong(),
+        pve = attributes.details?.pve,
+        website = attributes.details?.rustUrl,
+        isPremium = attributes.details?.rustPremium,
     )
 
 private fun calculateCycle(wipes: List<RustWipe>): Double? {

@@ -4,7 +4,7 @@ This project uses Ktor with MongoDB. The service periodically pulls Rust servers
 
 ## Running
 
-Ensure MongoDB is accessible and set `MONGODB_URI` if needed. You can also set `PORT` to change the listening port (defaults to `8080`). Then start the server:
+Ensure MongoDB is accessible and set `MONGODB_URI` if needed. You can also set `PORT` to change the listening port (defaults to `8080`). The application creates the necessary MongoDB indexes on startup. Then start the server:
 
 ```
 ./gradlew run
@@ -60,6 +60,11 @@ The response includes the requested page of servers and pagination fields:
   "servers": [ ... ]
 }
 ```
+
+Each server in the `servers` array exposes various attributes collected from
+Battlemetrics. Recent additions include `average_fps`, `pve`, `website`, and
+`is_premium` which indicate the average frames per second, PvE status, server
+homepage, and premium status respectively.
 
 ## Docker
 

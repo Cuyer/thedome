@@ -62,6 +62,7 @@ class ServerExtensionsAdditionalTest {
         val rustMaps = RustMaps(
             thumbnailUrl = "https://example.com/maps/abc/thumbnail.png",
             imageIconUrl = "icon.png",
+            mapUrl = "https://example.com/map",
             seed = 123L,
             size = 4000,
             monumentCount = 12
@@ -75,9 +76,13 @@ class ServerExtensionsAdditionalTest {
             rustMaps = rustMaps,
             rustWipes = wipes,
             official = true,
+            pve = true,
+            rustHeaderimage = "header.png",
             rustWorldSeed = 123L,
             rustWorldSize = 4000,
-            rustFpsAvg = 25.5
+            rustFpsAvg = 25.5,
+            rustUrl = "https://example.com",
+            rustPremium = true
         )
         val attributes = Attributes(
             id = "1",
@@ -110,6 +115,8 @@ class ServerExtensionsAdditionalTest {
         assertEquals(true, info.isOfficial)
         assertEquals("1.1.1.1:28015", info.serverIp)
         assertEquals("icon.png", info.mapImage)
+        assertEquals("https://example.com/map", info.mapUrl)
+        assertEquals("header.png", info.headerImage)
         assertEquals(ServerStatus.ONLINE, info.status)
         assertEquals(WipeType.MAP, info.wipeType)
         assertEquals(true, info.blueprints)
@@ -120,6 +127,10 @@ class ServerExtensionsAdditionalTest {
         assertEquals(123L, info.seed)
         assertEquals(4000, info.mapSize)
         assertEquals(12, info.monuments)
+        assertEquals(25L, info.averageFps)
+        assertEquals(true, info.pve)
+        assertEquals("https://example.com", info.website)
+        assertEquals(true, info.isPremium)
     }
 
     @Test

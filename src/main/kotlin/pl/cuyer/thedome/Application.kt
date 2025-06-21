@@ -34,6 +34,7 @@ import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
 import pl.cuyer.thedome.di.appModule
 
+private const val API_VERSION = "1.0.0"
 private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
 
 
@@ -105,6 +106,15 @@ fun Application.module() {
     val filtersEndpoint = FiltersEndpoint(filtersService)
 
     routing {
+        get("/") {
+            call.respond(
+                mapOf(
+                    "name" to "TheDome API",
+                    "version" to API_VERSION,
+                    "docs" to "/swagger"
+                )
+            )
+        }
         serversEndpoint.register(this)
         filtersEndpoint.register(this)
         swaggerUI(path = "swagger")

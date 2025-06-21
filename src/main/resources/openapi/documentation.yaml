@@ -3,6 +3,23 @@ info:
   title: TheDome API
   version: 1.0.0
 paths:
+  /:
+    get:
+      summary: Root endpoint
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  docs:
+                    type: string
   /servers:
     get:
       summary: List servers
@@ -137,6 +154,10 @@ components:
           type: string
         map_image:
           type: string
+        map_url:
+          type: string
+        header_image:
+          type: string
         description:
           type: string
         wipe_type:
@@ -159,6 +180,14 @@ components:
           type: integer
         monuments:
           type: integer
+        average_fps:
+          type: integer
+        pve:
+          type: boolean
+        website:
+          type: string
+        is_premium:
+          type: boolean
     ServersResponse:
       type: object
       properties:
