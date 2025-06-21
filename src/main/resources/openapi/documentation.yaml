@@ -8,11 +8,18 @@ paths:
       summary: Root endpoint
       responses:
         '200':
-          description: Welcome message
+          description: API information
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: object
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  docs:
+                    type: string
   /servers:
     get:
       summary: List servers
