@@ -33,5 +33,16 @@ data class ServerInfo(
     val mapImage: String? = null,
     val description: String? = null,
     @SerialName("wipe_type")
-    val wipeType: WipeType? = null
+    val wipeType: WipeType? = null,
+    val blueprints: Boolean? = null,
+    val kits: Boolean? = null,
+    val decay: Float? = null,
+    val upkeep: Double? = null,
+    val rates: Int? = null,
+    val seed: Long? = null,
+    @SerialName("map_size")
+    val mapSize: Int? = null,
+    @SerialName("entity_count")
+    val entityCount: Double? = null,
+    val monuments: Int? = null
 )

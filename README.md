@@ -33,6 +33,14 @@ the following parameters can be used:
 - `groupLimit` – maximum group limit
 - `order` – ordering field (`WIPE`, `RANK`, `PLAYER_COUNT`; defaults to `WIPE`)
 - `name` – substring match on server name
+- `blueprints` – blueprint availability
+- `kits` – kits availability
+- `decay` – decay rate
+- `upkeep` – upkeep cost
+- `rates` – gather rate
+- `seed` – world seed
+- `mapSize` – map size
+- `monuments` – monument count
 
 
 Example request:
