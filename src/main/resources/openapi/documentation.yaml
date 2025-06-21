@@ -180,18 +180,6 @@ paths:
         '401':
           description: Invalid refresh token
 
-  /auth/logout:
-    post:
-      summary: Logout user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefreshRequest'
-      responses:
-        '200':
-          description: Logged out
 components:
   schemas:
     ServerInfo:

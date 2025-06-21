@@ -52,10 +52,6 @@ class AuthService(
         return TokenPair(generateAccessToken(user.username), newRefresh)
     }
 
-    suspend fun logout(refreshToken: String) {
-        collection.updateOne(User::refreshToken eq refreshToken, setValue(User::refreshToken, null))
-    }
-
     private fun generateAccessToken(username: String): String {
         return JWT.create()
             .withAudience(jwtAudience)
