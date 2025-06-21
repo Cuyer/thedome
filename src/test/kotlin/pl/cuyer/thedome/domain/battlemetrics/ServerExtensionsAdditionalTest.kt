@@ -62,6 +62,7 @@ class ServerExtensionsAdditionalTest {
         val rustMaps = RustMaps(
             thumbnailUrl = "https://example.com/maps/abc/thumbnail.png",
             imageIconUrl = "icon.png",
+            mapUrl = "https://example.com/map",
             seed = 123L,
             size = 4000,
             monumentCount = 12
@@ -76,6 +77,7 @@ class ServerExtensionsAdditionalTest {
             rustWipes = wipes,
             official = true,
             pve = true,
+            rustHeaderimage = "header.png",
             rustWorldSeed = 123L,
             rustWorldSize = 4000,
             rustFpsAvg = 25.5,
@@ -113,6 +115,8 @@ class ServerExtensionsAdditionalTest {
         assertEquals(true, info.isOfficial)
         assertEquals("1.1.1.1:28015", info.serverIp)
         assertEquals("icon.png", info.mapImage)
+        assertEquals("https://example.com/map", info.mapUrl)
+        assertEquals("header.png", info.headerImage)
         assertEquals(ServerStatus.ONLINE, info.status)
         assertEquals(WipeType.MAP, info.wipeType)
         assertEquals(true, info.blueprints)
