@@ -7,9 +7,13 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
+import io.ktor.server.auth.jwt.JWTPrincipal
 import pl.cuyer.thedome.domain.auth.LoginRequest
 import pl.cuyer.thedome.domain.auth.RegisterRequest
 import pl.cuyer.thedome.domain.auth.RefreshRequest
+import pl.cuyer.thedome.domain.auth.UpgradeRequest
 import pl.cuyer.thedome.services.AuthService
 
 class AuthEndpoint(private val service: AuthService) {
@@ -23,6 +27,22 @@ class AuthEndpoint(private val service: AuthService) {
                         call.respond(tokens)
                     } else {
                         call.respond(HttpStatusCode.Conflict)
+                    }
+                }
+                post("/anonymous") {
+                    call.respond(service.registerAnonymous())
+                }
+                authenticate("auth-jwt") {
+                    post("/upgrade") {
+                        val principal = call.principal<JWTPrincipal>()!!
+                        val currentUsername = principal.getClaim("username", String::class)!!
+                        val req = call.receive<UpgradeRequest>()
+                        val tokens = service.upgradeAnonymous(currentUsername, req.username, req.password)
+                        if (tokens != null) {
+                            call.respond(tokens)
+                        } else {
+                            call.respond(HttpStatusCode.Conflict)
+                        }
                     }
                 }
                 post("/login") {

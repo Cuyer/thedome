@@ -46,7 +46,22 @@ the following parameters can be used:
 - `mapSize` – map size
 - `monuments` – monument count
 
-Authentication is handled via JWT. First register and then use the tokens from `/auth/login`:
+Authentication is handled via JWT. Anonymous users can obtain a short-lived access token:
+
+```bash
+curl -X POST http://localhost:8080/auth/anonymous
+```
+
+Anonymous tokens are rate limited to 60 requests per minute and cannot be refreshed. To convert an anonymous user into a registered account without losing data, send the anonymous token to `/auth/upgrade` with new credentials:
+
+```bash
+curl -X POST http://localhost:8080/auth/upgrade \
+  -H "Authorization: Bearer <accessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user","password":"password"}'
+```
+
+You can also register an account directly:
 
 ```bash
 curl -X POST http://localhost:8080/auth/register \
@@ -60,7 +75,7 @@ curl -X POST http://localhost:8080/auth/login \
   -d '{"username":"user","password":"password"}'
 ```
 
-Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. The `refreshToken` can be sent to `/auth/refresh` to obtain new tokens or `/auth/logout` to invalidate it.
+Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. When you register or log in, a `refreshToken` is also returned and can be sent to `/auth/refresh` to obtain new tokens or `/auth/logout` to invalidate it.
 
 
 Example request:
