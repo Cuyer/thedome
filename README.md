@@ -61,6 +61,11 @@ The response includes the requested page of servers and pagination fields:
 }
 ```
 
+Each server in the `servers` array exposes various attributes collected from
+Battlemetrics. Recent additions include `average_fps`, `pve`, `website`, and
+`is_premium` which indicate the average frames per second, PvE status, server
+homepage, and premium status respectively.
+
 ## Docker
 
 Build the application distribution and image:

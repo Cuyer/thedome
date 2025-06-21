@@ -91,6 +91,10 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         seed = attributes.details?.rustWorldSeed ?: attributes.details?.rustMaps?.seed,
         mapSize = attributes.details?.rustWorldSize ?: attributes.details?.rustMaps?.size,
         monuments = attributes.details?.rustMaps?.monumentCount,
+        averageFps = attributes.details?.rustFpsAvg?.toLong(),
+        pve = attributes.details?.pve,
+        website = attributes.details?.rustUrl,
+        isPremium = attributes.details?.rustPremium,
     )
 
 private fun calculateCycle(wipes: List<RustWipe>): Double? {

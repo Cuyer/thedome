@@ -75,9 +75,12 @@ class ServerExtensionsAdditionalTest {
             rustMaps = rustMaps,
             rustWipes = wipes,
             official = true,
+            pve = true,
             rustWorldSeed = 123L,
             rustWorldSize = 4000,
-            rustFpsAvg = 25.5
+            rustFpsAvg = 25.5,
+            rustUrl = "https://example.com",
+            rustPremium = true
         )
         val attributes = Attributes(
             id = "1",
@@ -120,6 +123,10 @@ class ServerExtensionsAdditionalTest {
         assertEquals(123L, info.seed)
         assertEquals(4000, info.mapSize)
         assertEquals(12, info.monuments)
+        assertEquals(25L, info.averageFps)
+        assertEquals(true, info.pve)
+        assertEquals("https://example.com", info.website)
+        assertEquals(true, info.isPremium)
     }
 
     @Test
