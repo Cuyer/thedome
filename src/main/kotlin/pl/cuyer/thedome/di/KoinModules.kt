@@ -13,9 +13,11 @@ import org.litote.kmongo.reactivestreams.KMongo
 import org.litote.kmongo.coroutine.coroutine
 import org.koin.dsl.module
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
+import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
+import pl.cuyer.thedome.services.AuthService
 
 val appModule = module {
     single<Json> { Json { ignoreUnknownKeys = true } }
@@ -50,7 +52,12 @@ val appModule = module {
         collection
     }
 
+    single<CoroutineCollection<User>> {
+        get<CoroutineDatabase>().getCollection<User>("users")
+    }
+
     single { ServerFetchService(get(), get()) }
     single { ServersService(get()) }
     single { FiltersService(get()) }
+    single { AuthService(get(), System.getenv("JWT_SECRET") ?: "secret", System.getenv("JWT_ISSUER") ?: "thedomeIssuer", System.getenv("JWT_AUDIENCE") ?: "thedomeAudience") }
 }

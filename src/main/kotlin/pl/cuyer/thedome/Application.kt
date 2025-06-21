@@ -10,6 +10,8 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
@@ -27,12 +29,16 @@ import pl.cuyer.thedome.resources.Servers
 import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
+import pl.cuyer.thedome.services.AuthService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
+import pl.cuyer.thedome.routes.AuthEndpoint
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
 import pl.cuyer.thedome.di.appModule
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 
 private const val API_VERSION = "1.0.0"
 private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
@@ -76,6 +82,29 @@ fun Application.module() {
         allowHeader(HttpHeaders.ContentType)
     }
 
+    val jwtAudience = System.getenv("JWT_AUDIENCE") ?: "thedomeAudience"
+    val jwtIssuer = System.getenv("JWT_ISSUER") ?: "thedomeIssuer"
+    val jwtRealm = System.getenv("JWT_REALM") ?: "thedomeRealm"
+    val jwtSecret = System.getenv("JWT_SECRET") ?: "secret"
+
+    install(Authentication) {
+        jwt("auth-jwt") {
+            realm = jwtRealm
+            verifier(
+                JWT
+                    .require(Algorithm.HMAC256(jwtSecret))
+                    .withAudience(jwtAudience)
+                    .withIssuer(jwtIssuer)
+                    .build()
+            )
+            validate { credential ->
+                if (credential.payload.audience.contains(jwtAudience)) {
+                    JWTPrincipal(credential.payload)
+                } else null
+            }
+        }
+    }
+
     val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
 
     val fetchService by inject<ServerFetchService>()
@@ -102,21 +131,27 @@ fun Application.module() {
 
     val serversService by inject<ServersService>()
     val filtersService by inject<FiltersService>()
+    val authService by inject<AuthService>()
     val serversEndpoint = ServersEndpoint(serversService)
     val filtersEndpoint = FiltersEndpoint(filtersService)
+    val authEndpoint = AuthEndpoint(authService)
 
     routing {
-        get("/") {
-            call.respond(
-                mapOf(
-                    "name" to "TheDome API",
-                    "version" to API_VERSION,
-                    "docs" to "/swagger"
+        authEndpoint.register(this)
+
+        authenticate("auth-jwt") {
+            get("/") {
+                call.respond(
+                    mapOf(
+                        "name" to "TheDome API",
+                        "version" to API_VERSION,
+                        "docs" to "/swagger"
+                    )
                 )
-            )
+            }
+            serversEndpoint.register(this)
+            filtersEndpoint.register(this)
         }
-        serversEndpoint.register(this)
-        filtersEndpoint.register(this)
         swaggerUI(path = "swagger")
     }
 }

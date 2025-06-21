@@ -16,6 +16,10 @@ Environment variables:
 - `FETCH_CRON` – cron expression for server fetch schedule (defaults to every 10 minutes; uses seconds as the first field)
 - `API_KEY` – optional RustMaps API key
 - `PORT` – overrides the default port if implemented
+- `JWT_SECRET` – HMAC secret for signing tokens (default `secret`)
+- `JWT_AUDIENCE` – JWT audience (default `thedomeAudience`)
+- `JWT_ISSUER` – JWT issuer (default `thedomeIssuer`)
+- `JWT_REALM` – authentication realm (default `thedomeRealm`)
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional filtering. Alongside pagination (`page` and `size`),
@@ -41,6 +45,22 @@ the following parameters can be used:
 - `seed` – world seed
 - `mapSize` – map size
 - `monuments` – monument count
+
+Authentication is handled via JWT. First register and then use the tokens from `/auth/login`:
+
+```bash
+curl -X POST http://localhost:8080/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user","password":"password"}'
+```
+
+```bash
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user","password":"password"}'
+```
+
+Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. The `refreshToken` can be sent to `/auth/refresh` to obtain new tokens or `/auth/logout` to invalidate it.
 
 
 Example request:
