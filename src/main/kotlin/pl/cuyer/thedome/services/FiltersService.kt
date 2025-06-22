@@ -10,9 +10,12 @@ import org.bson.BsonDocument
 import org.litote.kmongo.coroutine.CoroutineCollection
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.server.*
+import org.slf4j.LoggerFactory
 
 class FiltersService(private val collection: CoroutineCollection<BattlemetricsServerContent>) {
+    private val logger = LoggerFactory.getLogger(FiltersService::class.java)
     suspend fun getOptions(): FiltersOptions = coroutineScope {
+        logger.info("Fetching filters options")
         val flags = async {
             val docs = collection.aggregate<BsonDocument>(
                 listOf(
@@ -122,5 +125,6 @@ class FiltersService(private val collection: CoroutineCollection<BattlemetricsSe
             difficulty = difficulty.await(),
             wipeSchedules = wipeSchedules.await()
         )
+        .also { logger.info("Filters options prepared") }
     }
 }

@@ -11,9 +11,12 @@ import pl.cuyer.thedome.domain.server.ServerInfo
 import pl.cuyer.thedome.domain.server.ServersResponse
 import pl.cuyer.thedome.resources.Servers
 import java.util.regex.Pattern
+import org.slf4j.LoggerFactory
 
 class ServersService(private val collection: CoroutineCollection<BattlemetricsServerContent>) {
+    private val logger = LoggerFactory.getLogger(ServersService::class.java)
     suspend fun getServers(params: Servers): ServersResponse {
+        logger.info("Querying servers with params: $params")
         val page = params.page ?: 1
         val size = params.size ?: 20
         val skip = (page - 1) * size
@@ -71,12 +74,14 @@ class ServersService(private val collection: CoroutineCollection<BattlemetricsSe
 
         val totalPages = if (size == 0) 0 else ((totalItems + size - 1) / size).toInt()
 
-        return ServersResponse(
+        val response = ServersResponse(
             page = page,
             size = size,
             totalPages = totalPages,
             totalItems = totalItems,
             servers = serverInfos
         )
+        logger.info("Returning ${'$'}{serverInfos.size} servers for page $page")
+        return response
     }
 }
