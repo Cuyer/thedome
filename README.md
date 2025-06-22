@@ -181,6 +181,16 @@ You can retrieve filter options at `http://localhost:8080/filters/options`.
 Coding style is defined by the `.editorconfig` file at the repository root. Configure
 your editor to respect these settings when contributing.
 
+## Running Tests
+
+Run the test suite using the Gradle wrapper:
+
+```bash
+./gradlew test
+```
+
+All tests should pass before submitting changes.
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
