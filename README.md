@@ -23,6 +23,8 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 - `JWT_ISSUER` – JWT issuer (default `thedomeIssuer`)
 - `JWT_REALM` – authentication realm (default `thedomeRealm`)
 - `ALLOWED_ORIGINS` – comma-separated list of allowed CORS origins (useful in production)
+- `ANON_RATE_LIMIT` – requests per minute allowed for anonymous users (default `60`)
+- `ANON_REFILL_PERIOD` – seconds per anonymous rate limit window (default `60`)
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional filtering. Alongside pagination (`page` and `size`),
@@ -56,7 +58,7 @@ curl -X POST http://localhost:8080/auth/anonymous
 ```
 
 
-Anonymous tokens are rate limited to 60 requests per minute and cannot be refreshed. To convert an anonymous user into a registered account without losing data, send the anonymous token to `/auth/upgrade` with new credentials:
+Anonymous tokens are rate limited. By default they may perform `60` requests every `60` seconds. Both the limit and the period are configurable via the `ANON_RATE_LIMIT` and `ANON_REFILL_PERIOD` environment variables. Anonymous tokens cannot be refreshed. To convert an anonymous user into a registered account without losing data, send the anonymous token to `/auth/upgrade` with new credentials:
 
 ```bash
 curl -X POST http://localhost:8080/auth/upgrade \

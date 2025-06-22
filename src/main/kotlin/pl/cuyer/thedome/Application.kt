@@ -41,12 +41,14 @@ import pl.cuyer.thedome.services.AuthService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
 import pl.cuyer.thedome.routes.AuthEndpoint
-import pl.cuyer.thedome.plugins.AnonymousRateLimit
+import io.ktor.server.plugins.ratelimit.*
+import kotlin.time.Duration.Companion.seconds
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
 import pl.cuyer.thedome.di.appModule
 import pl.cuyer.thedome.AppConfig
+import pl.cuyer.thedome.utils.logException
 import pl.cuyer.thedome.domain.ErrorResponse
 import pl.cuyer.thedome.exceptions.UserAlreadyExistsException
 import pl.cuyer.thedome.exceptions.InvalidCredentialsException
@@ -59,7 +61,6 @@ import com.auth0.jwt.algorithms.Algorithm
 
 private const val API_VERSION = "1.0.0"
 private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
-
 
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
@@ -79,24 +80,31 @@ fun Application.module() {
     install(Resources)
     install(StatusPages) {
         exception<UserAlreadyExistsException> { call, cause ->
+            logException(call, cause)
             call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
         }
         exception<InvalidCredentialsException> { call, cause ->
+            logException(call, cause)
             call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized"))
         }
         exception<InvalidRefreshTokenException> { call, cause ->
+            logException(call, cause)
             call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized"))
         }
         exception<AnonymousUpgradeException> { call, cause ->
+            logException(call, cause)
             call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
         }
         exception<FiltersOptionsException> { call, cause ->
+            logException(call, cause)
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
         }
         exception<ServersQueryException> { call, cause ->
+            logException(call, cause)
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
         }
         exception<Throwable> { call, cause ->
+            logException(call, cause)
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
         }
         status(HttpStatusCode.NotFound) { call, status ->
@@ -104,7 +112,6 @@ fun Application.module() {
         }
     }
     install(CallLogging) {
-        filter { call -> call.request.path().startsWith("/servers") }
         format { call ->
             val status = call.response.status()
             val httpMethod = call.request.httpMethod.value
@@ -153,8 +160,20 @@ fun Application.module() {
         }
     }
 
-    install(AnonymousRateLimit) {
-        requestsPerMinute = 60
+    install(RateLimit) {
+        global {
+            requestKey { call ->
+                val principal = call.principal<JWTPrincipal>()
+                principal?.getClaim("username", String::class) ?: ""
+            }
+            rateLimiter { _, key ->
+                if ((key as String).startsWith("anon-")) {
+                    RateLimiter.default(limit = config.anonRateLimit, refillPeriod = config.anonRefillPeriod.seconds)
+                } else {
+                    RateLimiter.Unlimited
+                }
+            }
+        }
     }
 
     val fetchService by inject<ServerFetchService>()
