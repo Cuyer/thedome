@@ -33,7 +33,8 @@ import pl.cuyer.thedome.services.AuthService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
 import pl.cuyer.thedome.routes.AuthEndpoint
-import pl.cuyer.thedome.plugins.AnonymousRateLimit
+import io.ktor.server.plugins.ratelimit.*
+import kotlin.time.Duration.Companion.seconds
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
@@ -145,8 +146,20 @@ fun Application.module() {
         }
     }
 
-    install(AnonymousRateLimit) {
-        requestsPerMinute = 60
+    install(RateLimit) {
+        global {
+            requestKey { call ->
+                val principal = call.principal<JWTPrincipal>()
+                principal?.getClaim("username", String::class) ?: ""
+            }
+            rateLimiter { _, key ->
+                if ((key as String).startsWith("anon-")) {
+                    RateLimiter.default(limit = config.anonRateLimit, refillPeriod = config.anonRefillPeriod.seconds)
+                } else {
+                    RateLimiter.Unlimited
+                }
+            }
+        }
     }
 
     val fetchService by inject<ServerFetchService>()
