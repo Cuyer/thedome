@@ -26,7 +26,7 @@ class AuthEndpoint(private val service: AuthService) {
             route("/auth") {
                 post("/register") {
                     val req = call.receive<RegisterRequest>()
-                    val tokens = service.register(req.username, req.password)
+                    val tokens = service.register(req.username, req.email, req.password)
                         ?: throw UserAlreadyExistsException()
                     call.respond(tokens)
                 }

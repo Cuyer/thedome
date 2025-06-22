@@ -57,6 +57,7 @@ fun appModule(config: AppConfig) = module {
         val collection = get<CoroutineDatabase>().getCollection<User>("users")
         runBlocking {
             collection.ensureUniqueIndex(User::username)
+            collection.ensureUniqueIndex(User::email)
         }
         collection
     }

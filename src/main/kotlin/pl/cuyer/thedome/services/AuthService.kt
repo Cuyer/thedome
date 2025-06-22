@@ -28,17 +28,17 @@ class AuthService(
         return digest.joinToString("") { "%02x".format(it) }
     }
 
-    suspend fun register(username: String, password: String): TokenPair? {
+    suspend fun register(username: String, email: String, password: String): TokenPair? {
         logger.info("Registering user: $username")
-        val existing = collection.findOne(User::username eq username)
+        val existing = collection.findOne(User::username eq username) ?: collection.findOne(User::email eq email)
         if (existing != null) return null
         val hash = BCrypt.hashpw(password, BCrypt.gensalt())
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
-        val user = User(username = username, passwordHash = hash, refreshToken = hashedRefresh)
+        val user = User(username = username, email = email, passwordHash = hash, refreshToken = hashedRefresh)
         collection.insertOne(user)
         logger.info("User $username registered")
-        return TokenPair(generateAccessToken(username), refresh)
+        return TokenPair(generateAccessToken(username), refresh, username, email)
     }
 
     suspend fun registerAnonymous(): AccessToken {
@@ -62,18 +62,19 @@ class AuthService(
         collection.updateOne(User::username eq newUsername, setValue(User::passwordHash, hash))
         collection.updateOne(User::username eq newUsername, setValue(User::refreshToken, hashedRefresh))
         logger.info("Anonymous user $currentUsername upgraded to $newUsername")
-        return TokenPair(generateAccessToken(newUsername), refresh)
+        val updated = collection.findOne(User::username eq newUsername)
+        return TokenPair(generateAccessToken(newUsername), refresh, newUsername, updated?.email)
     }
-    
+
     suspend fun login(username: String, password: String): TokenPair? {
         logger.info("User $username attempting login")
-        val user = collection.findOne(User::username eq username) ?: return null
+        val user = collection.findOne(User::username eq username) ?: collection.findOne(User::email eq username) ?: return null
         if (!BCrypt.checkpw(password, user.passwordHash)) return null
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
-        collection.updateOne(User::username eq username, setValue(User::refreshToken, hashedRefresh))
-        logger.info("User $username logged in")
-        return TokenPair(generateAccessToken(username), refresh)
+        collection.updateOne(User::username eq user.username, setValue(User::refreshToken, hashedRefresh))
+        logger.info("User ${'$'}{user.username} logged in")
+        return TokenPair(generateAccessToken(user.username), refresh, user.username, user.email)
     }
 
     suspend fun refresh(refreshToken: String): TokenPair? {
@@ -84,7 +85,7 @@ class AuthService(
         val hashedNew = hashToken(newRefresh)
         collection.updateOne(User::username eq user.username, setValue(User::refreshToken, hashedNew))
         logger.info("Issued new refresh token for ${'$'}{user.username}")
-        return TokenPair(generateAccessToken(user.username), newRefresh)
+        return TokenPair(generateAccessToken(user.username), newRefresh, user.username, user.email)
     }
 
     private fun generateAccessToken(username: String): String {
