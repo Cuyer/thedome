@@ -16,7 +16,7 @@ Environment variables:
 - `FETCH_CRON` – cron expression for server fetch schedule (defaults to every 10 minutes; uses seconds as the first field)
 - `API_KEY` – optional RustMaps API key
 - `PORT` – overrides the default port if implemented
-- `JWT_SECRET` – HMAC secret for signing tokens (default `secret`)
+- `JWT_SECRET` – HMAC secret for signing tokens (**required**; the application fails if missing)
 - `JWT_AUDIENCE` – JWT audience (default `thedomeAudience`)
 - `JWT_ISSUER` – JWT issuer (default `thedomeIssuer`)
 - `JWT_REALM` – authentication realm (default `thedomeRealm`)
@@ -111,10 +111,10 @@ Build the application distribution and image:
 docker build -t thedome .
 ```
 
-Run the container exposing port 8080:
+Run the container exposing port 8080 (set `JWT_SECRET` to start):
 
 ```bash
-docker run -p 8080:8080 thedome
+docker run -e JWT_SECRET=supersecret -p 8080:8080 thedome
 ```
 
 ## Docker Compose

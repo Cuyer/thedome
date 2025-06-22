@@ -86,7 +86,7 @@ fun Application.module() {
     val jwtAudience = System.getenv("JWT_AUDIENCE") ?: "thedomeAudience"
     val jwtIssuer = System.getenv("JWT_ISSUER") ?: "thedomeIssuer"
     val jwtRealm = System.getenv("JWT_REALM") ?: "thedomeRealm"
-    val jwtSecret = System.getenv("JWT_SECRET") ?: "secret"
+    val jwtSecret = System.getenv("JWT_SECRET") ?: error("JWT_SECRET not set")
 
     install(Authentication) {
         jwt("auth-jwt") {
