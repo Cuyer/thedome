@@ -47,7 +47,7 @@ class AuthService(
         val user = User(username = username, passwordHash = "", refreshToken = null)
         collection.insertOne(user)
         logger.info("Anonymous user $username registered")
-        return AccessToken(generateAccessToken(username))
+        return AccessToken(generateAccessToken(username), username)
     }
 
     suspend fun upgradeAnonymous(currentUsername: String, newUsername: String, password: String): TokenPair? {
