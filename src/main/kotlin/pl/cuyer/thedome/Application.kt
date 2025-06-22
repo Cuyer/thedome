@@ -62,10 +62,8 @@ import com.auth0.jwt.algorithms.Algorithm
 private const val API_VERSION = "1.0.0"
 private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
 
-fun main() {
-    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
-    logger.info("Starting server on port $port")
-    embeddedServer(Netty, port = port, module = Application::module).start(wait = true)
+fun main(args: Array<String>) {
+    EngineMain.main(args)
 }
 
 fun Application.module() {
