@@ -22,7 +22,7 @@ services:
     # env_file: ./.env  # Uncomment if .env file exists
 
   mongo:
-    image: mongo:latest
+    image: mongo:7
     container_name: mongo
     restart: unless-stopped
     ports:
