@@ -32,6 +32,7 @@ dependencies {
     implementation("io.ktor:ktor-client-core-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-cio-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-rate-limit-jvm:$ktorVersion")
     implementation("io.github.flaxoos:ktor-server-task-scheduling-core:$ktorPluginsVersion")
     implementation("io.github.flaxoos:ktor-server-task-scheduling-mongodb:$ktorPluginsVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")

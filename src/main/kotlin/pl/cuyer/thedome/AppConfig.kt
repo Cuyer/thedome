@@ -10,7 +10,9 @@ data class AppConfig(
     val jwtSecret: String,
     val fetchCron: String,
     val mongoUri: String,
-    val apiKey: String
+    val apiKey: String,
+    val anonRateLimit: Int,
+    val anonRefillPeriod: Int
 ) {
     companion object {
         fun load(config: ApplicationConfig): AppConfig {
@@ -24,7 +26,20 @@ data class AppConfig(
             val fetchCron = section.propertyOrNull("fetchCron")?.getString() ?: "0 */10 * * *"
             val mongoUri = section.propertyOrNull("mongoUri")?.getString() ?: "mongodb://localhost:27017"
             val apiKey = section.propertyOrNull("apiKey")?.getString() ?: ""
-            return AppConfig(allowedOrigins, jwtAudience, jwtIssuer, jwtRealm, jwtSecret, fetchCron, mongoUri, apiKey)
+            val anonRateLimit = section.propertyOrNull("anonRateLimit")?.getString()?.toIntOrNull() ?: 60
+            val anonRefillPeriod = section.propertyOrNull("anonRefillPeriod")?.getString()?.toIntOrNull() ?: 60
+            return AppConfig(
+                allowedOrigins,
+                jwtAudience,
+                jwtIssuer,
+                jwtRealm,
+                jwtSecret,
+                fetchCron,
+                mongoUri,
+                apiKey,
+                anonRateLimit,
+                anonRefillPeriod
+            )
         }
     }
 }
