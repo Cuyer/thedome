@@ -14,6 +14,10 @@ import pl.cuyer.thedome.domain.auth.LoginRequest
 import pl.cuyer.thedome.domain.auth.RegisterRequest
 import pl.cuyer.thedome.domain.auth.RefreshRequest
 import pl.cuyer.thedome.domain.auth.UpgradeRequest
+import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
+import pl.cuyer.thedome.exceptions.InvalidCredentialsException
+import pl.cuyer.thedome.exceptions.InvalidRefreshTokenException
+import pl.cuyer.thedome.exceptions.UserAlreadyExistsException
 import pl.cuyer.thedome.services.AuthService
 
 class AuthEndpoint(private val service: AuthService) {
@@ -23,11 +27,8 @@ class AuthEndpoint(private val service: AuthService) {
                 post("/register") {
                     val req = call.receive<RegisterRequest>()
                     val tokens = service.register(req.username, req.password)
-                    if (tokens != null) {
-                        call.respond(tokens)
-                    } else {
-                        call.respond(HttpStatusCode.Conflict)
-                    }
+                        ?: throw UserAlreadyExistsException()
+                    call.respond(tokens)
                 }
                 post("/anonymous") {
                     call.respond(service.registerAnonymous())
@@ -38,30 +39,21 @@ class AuthEndpoint(private val service: AuthService) {
                         val currentUsername = principal.getClaim("username", String::class)!!
                         val req = call.receive<UpgradeRequest>()
                         val tokens = service.upgradeAnonymous(currentUsername, req.username, req.password)
-                        if (tokens != null) {
-                            call.respond(tokens)
-                        } else {
-                            call.respond(HttpStatusCode.Conflict)
-                        }
+                            ?: throw AnonymousUpgradeException()
+                        call.respond(tokens)
                     }
                 }
                 post("/login") {
                     val req = call.receive<LoginRequest>()
                     val tokens = service.login(req.username, req.password)
-                    if (tokens != null) {
-                        call.respond(tokens)
-                    } else {
-                        call.respond(HttpStatusCode.Unauthorized)
-                    }
+                        ?: throw InvalidCredentialsException()
+                    call.respond(tokens)
                 }
                 post("/refresh") {
                     val req = call.receive<RefreshRequest>()
                     val tokens = service.refresh(req.refreshToken)
-                    if (tokens != null) {
-                        call.respond(tokens)
-                    } else {
-                        call.respond(HttpStatusCode.Unauthorized)
-                    }
+                        ?: throw InvalidRefreshTokenException()
+                    call.respond(tokens)
                 }
             }
         }
