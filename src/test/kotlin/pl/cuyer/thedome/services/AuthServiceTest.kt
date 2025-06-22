@@ -11,8 +11,16 @@ import org.litote.kmongo.eq
 import org.bson.conversions.Bson
 import pl.cuyer.thedome.domain.auth.User
 import com.mongodb.client.model.InsertOneOptions
+import org.mindrot.jbcrypt.BCrypt
+import java.security.MessageDigest
+import io.mockk.slot
 
 class AuthServiceTest {
+
+    private fun hash(token: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
+    }
     @Test
     fun `registerAnonymous stores user`() = runBlocking {
         val collection = mockk<CoroutineCollection<User>>()
@@ -36,5 +44,43 @@ class AuthServiceTest {
 
         assertTrue(result?.accessToken?.isNotEmpty() == true)
         coVerify(exactly = 3) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
+    }
+
+    @Test
+    fun `login hashes refresh token`() = runBlocking {
+        val collection = mockk<CoroutineCollection<User>>()
+        val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
+        val user = User(username = "user", passwordHash = passwordHash)
+        val slotUpdate = slot<Bson>()
+        coEvery { collection.findOne(any<Bson>()) } returns user
+        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
+        val service = AuthService(collection, "secret", "issuer", "audience")
+
+        val result = service.login("user", "pass")
+
+        assertTrue(result?.refreshToken?.isNotEmpty() == true)
+        val expected = hash(result!!.refreshToken)
+        assertTrue(slotUpdate.captured.toString().contains(expected))
+    }
+
+    @Test
+    fun `refresh compares hashed token`() = runBlocking {
+        val collection = mockk<CoroutineCollection<User>>()
+        val oldToken = "old-token"
+        val oldHash = hash(oldToken)
+        val user = User(username = "user", passwordHash = "", refreshToken = oldHash)
+        val slotFind = slot<Bson>()
+        val slotUpdate = slot<Bson>()
+        coEvery { collection.findOne(capture(slotFind)) } returns user
+        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
+        val service = AuthService(collection, "secret", "issuer", "audience")
+
+        val result = service.refresh(oldToken)
+
+        assertTrue(result?.refreshToken?.isNotEmpty() == true)
+        val expectedFind = slotFind.captured.toString()
+        assertTrue(expectedFind.contains(oldHash))
+        val expectedUpdate = hash(result!!.refreshToken)
+        assertTrue(slotUpdate.captured.toString().contains(expectedUpdate))
     }
 }

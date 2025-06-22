@@ -10,6 +10,7 @@ import pl.cuyer.thedome.domain.auth.TokenPair
 import pl.cuyer.thedome.domain.auth.AccessToken
 import java.util.Date
 import java.util.UUID
+import java.security.MessageDigest
 import org.mindrot.jbcrypt.BCrypt
 
 class AuthService(
@@ -20,12 +21,18 @@ class AuthService(
 ) {
     private val algorithm = Algorithm.HMAC256(jwtSecret)
 
+    private fun hashToken(token: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
     suspend fun register(username: String, password: String): TokenPair? {
         val existing = collection.findOne(User::username eq username)
         if (existing != null) return null
         val hash = BCrypt.hashpw(password, BCrypt.gensalt())
         val refresh = generateRefreshToken()
-        val user = User(username = username, passwordHash = hash, refreshToken = refresh)
+        val hashedRefresh = hashToken(refresh)
+        val user = User(username = username, passwordHash = hash, refreshToken = hashedRefresh)
         collection.insertOne(user)
         return TokenPair(generateAccessToken(username), refresh)
     }
@@ -43,9 +50,10 @@ class AuthService(
         if (collection.findOne(User::username eq newUsername) != null) return null
         val hash = BCrypt.hashpw(password, BCrypt.gensalt())
         val refresh = generateRefreshToken()
+        val hashedRefresh = hashToken(refresh)
         collection.updateOne(User::username eq currentUsername, setValue(User::username, newUsername))
         collection.updateOne(User::username eq newUsername, setValue(User::passwordHash, hash))
-        collection.updateOne(User::username eq newUsername, setValue(User::refreshToken, refresh))
+        collection.updateOne(User::username eq newUsername, setValue(User::refreshToken, hashedRefresh))
         return TokenPair(generateAccessToken(newUsername), refresh)
     }
     
@@ -53,14 +61,17 @@ class AuthService(
         val user = collection.findOne(User::username eq username) ?: return null
         if (!BCrypt.checkpw(password, user.passwordHash)) return null
         val refresh = generateRefreshToken()
-        collection.updateOne(User::username eq username, setValue(User::refreshToken, refresh))
+        val hashedRefresh = hashToken(refresh)
+        collection.updateOne(User::username eq username, setValue(User::refreshToken, hashedRefresh))
         return TokenPair(generateAccessToken(username), refresh)
     }
 
     suspend fun refresh(refreshToken: String): TokenPair? {
-        val user = collection.findOne(User::refreshToken eq refreshToken) ?: return null
+        val hashed = hashToken(refreshToken)
+        val user = collection.findOne(User::refreshToken eq hashed) ?: return null
         val newRefresh = generateRefreshToken()
-        collection.updateOne(User::username eq user.username, setValue(User::refreshToken, newRefresh))
+        val hashedNew = hashToken(newRefresh)
+        collection.updateOne(User::username eq user.username, setValue(User::refreshToken, hashedNew))
         return TokenPair(generateAccessToken(user.username), newRefresh)
     }
 
