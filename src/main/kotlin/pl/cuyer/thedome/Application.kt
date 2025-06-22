@@ -17,11 +17,19 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.plugins.swagger.*
+import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
+import io.micrometer.prometheus.PrometheusMeterRegistry
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.*
@@ -166,6 +174,18 @@ fun Application.module() {
         }
     }
 
+    val metricsRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    install(MicrometerMetrics) {
+        registry = metricsRegistry
+        meterBinders = listOf(
+            ClassLoaderMetrics(),
+            JvmMemoryMetrics(),
+            JvmGcMetrics(),
+            ProcessorMetrics(),
+            JvmThreadMetrics()
+        )
+    }
+
     monitor.subscribe(ApplicationStopped) {
         schedulerClient.close()
     }
@@ -193,6 +213,7 @@ fun Application.module() {
             serversEndpoint.register(this)
             filtersEndpoint.register(this)
         }
+        get("/metrics") { call.respondText(metricsRegistry.scrape()) }
         swaggerUI(path = "swagger")
     }
 }
