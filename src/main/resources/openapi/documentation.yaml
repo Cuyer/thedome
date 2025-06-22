@@ -117,7 +117,7 @@ paths:
       summary: Obtain anonymous access token
       responses:
         '200':
-          description: Access token
+          description: Access token and username
           content:
             application/json:
               schema:
@@ -351,6 +351,8 @@ components:
       type: object
       properties:
         accessToken:
+          type: string
+        username:
           type: string
     UpgradeRequest:
       type: object

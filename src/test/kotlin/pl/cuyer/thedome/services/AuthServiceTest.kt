@@ -30,6 +30,7 @@ class AuthServiceTest {
         val result = service.registerAnonymous()
 
         assertTrue(result.accessToken.isNotEmpty())
+        assertTrue(result.username.startsWith("anon-"))
         coVerify { collection.insertOne(match { it.username.startsWith("anon-") && it.refreshToken == null }, any<InsertOneOptions>()) }
     }
     @Test
