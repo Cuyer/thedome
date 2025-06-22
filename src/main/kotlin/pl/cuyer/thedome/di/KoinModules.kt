@@ -12,6 +12,7 @@ import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.reactivestreams.KMongo
 import org.litote.kmongo.coroutine.coroutine
 import org.koin.dsl.module
+import org.koin.core.qualifier.named
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.services.ServerFetchService
@@ -35,7 +36,7 @@ fun appModule(config: AppConfig) = module {
 
     single<CoroutineDatabase> { get<CoroutineClient>().getDatabase("thedome") }
 
-    single<CoroutineCollection<BattlemetricsServerContent>> {
+    single<CoroutineCollection<BattlemetricsServerContent>>(named("servers")) {
         val collection = get<CoroutineDatabase>().getCollection<BattlemetricsServerContent>("servers")
         runBlocking {
             collection.createIndex("{ 'attributes.rank': 1 }")
@@ -52,7 +53,7 @@ fun appModule(config: AppConfig) = module {
         collection
     }
 
-    single<CoroutineCollection<User>> {
+    single<CoroutineCollection<User>>(named("users")) {
         val collection = get<CoroutineDatabase>().getCollection<User>("users")
         runBlocking {
             collection.ensureUniqueIndex(User::username)
@@ -60,8 +61,8 @@ fun appModule(config: AppConfig) = module {
         collection
     }
 
-    single { ServerFetchService(get(), get(), config.apiKey) }
-    single { ServersService(get()) }
-    single { FiltersService(get()) }
-    single { AuthService(get(), config.jwtSecret, config.jwtIssuer, config.jwtAudience) }
+    single { ServerFetchService(get(), get(named("servers")), config.apiKey) }
+    single { ServersService(get(named("servers"))) }
+    single { FiltersService(get(named("servers"))) }
+    single { AuthService(get(named("users")), config.jwtSecret, config.jwtIssuer, config.jwtAudience) }
 }
