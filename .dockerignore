@@ -1,0 +1,14 @@
+# Ignore version control directory
+.git
+
+# Gradle build outputs and caches
+build/
+.gradle/
+
+# Test sources are not needed in the image
+src/test/
+
+# Continuous integration configuration and editor files
+.github/
+.idea/
+
