@@ -38,6 +38,13 @@ import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
 import pl.cuyer.thedome.di.appModule
+import pl.cuyer.thedome.domain.ErrorResponse
+import pl.cuyer.thedome.exceptions.UserAlreadyExistsException
+import pl.cuyer.thedome.exceptions.InvalidCredentialsException
+import pl.cuyer.thedome.exceptions.InvalidRefreshTokenException
+import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
+import pl.cuyer.thedome.exceptions.FiltersOptionsException
+import pl.cuyer.thedome.exceptions.ServersQueryException
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 
@@ -61,11 +68,29 @@ fun Application.module() {
     }
     install(Resources)
     install(StatusPages) {
+        exception<UserAlreadyExistsException> { call, cause ->
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
+        }
+        exception<InvalidCredentialsException> { call, cause ->
+            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized"))
+        }
+        exception<InvalidRefreshTokenException> { call, cause ->
+            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized"))
+        }
+        exception<AnonymousUpgradeException> { call, cause ->
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
+        }
+        exception<FiltersOptionsException> { call, cause ->
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
+        }
+        exception<ServersQueryException> { call, cause ->
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
+        }
         exception<Throwable> { call, cause ->
-            call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
         }
         status(HttpStatusCode.NotFound) { call, status ->
-            call.respondText(text = "404: Page Not Found", status = status)
+            call.respond(status, ErrorResponse("Page Not Found"))
         }
     }
     install(CallLogging) {

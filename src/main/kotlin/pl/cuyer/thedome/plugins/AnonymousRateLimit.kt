@@ -5,6 +5,7 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.response.*
+import pl.cuyer.thedome.domain.ErrorResponse
 import java.util.concurrent.ConcurrentHashMap
 
 class AnonymousRateLimitConfig {
@@ -33,7 +34,7 @@ val AnonymousRateLimit = createApplicationPlugin(
             }
         }!!
         if (info.count > pluginConfig.requestsPerMinute) {
-            call.respond(HttpStatusCode.TooManyRequests)
+            call.respond(HttpStatusCode.TooManyRequests, ErrorResponse("Too many requests"))
             return@onCall
         }
     }

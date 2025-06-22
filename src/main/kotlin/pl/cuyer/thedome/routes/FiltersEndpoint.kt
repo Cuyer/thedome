@@ -6,12 +6,18 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import pl.cuyer.thedome.resources.FiltersOptions
 import pl.cuyer.thedome.services.FiltersService
+import pl.cuyer.thedome.exceptions.FiltersOptionsException
 
 class FiltersEndpoint(private val service: FiltersService) {
     fun register(route: Route) {
         with(route) {
             get<FiltersOptions> {
-                call.respond(service.getOptions())
+                val options = try {
+                    service.getOptions()
+                } catch (e: Exception) {
+                    throw FiltersOptionsException()
+                }
+                call.respond(options)
             }
         }
     }
