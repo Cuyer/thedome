@@ -38,8 +38,7 @@ WORKDIR /app
 # Copy built distribution from build stage
 COPY --from=build /app/build/install/thedome /app
 
-ENV JWT_SECRET=secret \
-    JWT_AUDIENCE=thedomeAudience \
+ENV JWT_AUDIENCE=thedomeAudience \
     JWT_ISSUER=thedomeIssuer \
     JWT_REALM=thedomeRealm
 
