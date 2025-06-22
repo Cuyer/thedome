@@ -12,6 +12,8 @@ Ensure MongoDB is accessible and set `MONGODB_URI` if needed. You can also set `
 
 Environment variables:
 
+Values can also be specified in `src/main/resources/application.conf` under the `ktor.config` section.
+
 - `MONGODB_URI` – MongoDB connection string
 - `FETCH_CRON` – cron expression for server fetch schedule (defaults to every 10 minutes; uses seconds as the first field)
 - `API_KEY` – optional RustMaps API key

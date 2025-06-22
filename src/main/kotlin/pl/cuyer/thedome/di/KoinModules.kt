@@ -18,8 +18,9 @@ import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
+import pl.cuyer.thedome.AppConfig
 
-val appModule = module {
+fun appModule(config: AppConfig) = module {
     single<Json> { Json { ignoreUnknownKeys = true } }
 
     single<HttpClient> {
@@ -29,8 +30,7 @@ val appModule = module {
     }
 
     single<CoroutineClient> {
-        val uri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
-        KMongo.createClient(uri).coroutine
+        KMongo.createClient(config.mongoUri).coroutine
     }
 
     single<CoroutineDatabase> { get<CoroutineClient>().getDatabase("thedome") }
@@ -60,8 +60,8 @@ val appModule = module {
         collection
     }
 
-    single { ServerFetchService(get(), get()) }
+    single { ServerFetchService(get(), get(), config.apiKey) }
     single { ServersService(get()) }
     single { FiltersService(get()) }
-    single { AuthService(get(), System.getenv("JWT_SECRET") ?: "secret", System.getenv("JWT_ISSUER") ?: "thedomeIssuer", System.getenv("JWT_AUDIENCE") ?: "thedomeAudience") }
+    single { AuthService(get(), config.jwtSecret, config.jwtIssuer, config.jwtAudience) }
 }

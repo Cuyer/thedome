@@ -16,13 +16,13 @@ import pl.cuyer.thedome.domain.battlemetrics.fetchMapIcon
 
 class ServerFetchService(
     private val client: HttpClient,
-    private val collection: CoroutineCollection<BattlemetricsServerContent>
+    private val collection: CoroutineCollection<BattlemetricsServerContent>,
+    private val apiKey: String
 ) {
     private val logger = LoggerFactory.getLogger(ServerFetchService::class.java)
 
     suspend fun fetchServers() {
         val servers = mutableListOf<BattlemetricsServerContent>()
-        val apiKey = System.getenv("API_KEY") ?: ""
         val iconCache = mutableMapOf<String, String?>()
         var url: String? = "https://api.battlemetrics.com/servers?sort=rank&filter[game]=rust&page[size]=100&filter[status]=online,offline"
         logger.info("Fetching servers from Battlemetrics API")
