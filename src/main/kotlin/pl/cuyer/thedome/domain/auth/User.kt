@@ -11,6 +11,7 @@ data class User(
     @Serializable(with = ObjectIdSerializer::class)
     val id: ObjectId? = null,
     val username: String,
+    val email: String? = null,
     val passwordHash: String,
     val refreshToken: String? = null
 )

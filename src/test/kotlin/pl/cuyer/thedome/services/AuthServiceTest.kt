@@ -31,12 +31,12 @@ class AuthServiceTest {
 
         assertTrue(result.accessToken.isNotEmpty())
         assertTrue(result.username.startsWith("anon-"))
-        coVerify { collection.insertOne(match { it.username.startsWith("anon-") && it.refreshToken == null }, any<InsertOneOptions>()) }
+        coVerify { collection.insertOne(match { it.username.startsWith("anon-") && it.refreshToken == null && it.email == null }, any<InsertOneOptions>()) }
     }
     @Test
     fun `upgradeAnonymous converts user`() = runBlocking {
         val collection = mockk<CoroutineCollection<User>>()
-        val anon = User(username = "anon-123", passwordHash = "", refreshToken = null)
+        val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null)
         coEvery { collection.findOne(any<Bson>()) } returnsMany listOf(anon, null)
         coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
@@ -51,7 +51,7 @@ class AuthServiceTest {
     fun `login hashes refresh token`() = runBlocking {
         val collection = mockk<CoroutineCollection<User>>()
         val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
-        val user = User(username = "user", passwordHash = passwordHash)
+        val user = User(username = "user", email = "user@example.com", passwordHash = passwordHash)
         val slotUpdate = slot<Bson>()
         coEvery { collection.findOne(any<Bson>()) } returns user
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
@@ -60,6 +60,8 @@ class AuthServiceTest {
         val result = service.login("user", "pass")
 
         assertTrue(result?.refreshToken?.isNotEmpty() == true)
+        assertTrue(result?.username == "user")
+        assertTrue(result?.email == "user@example.com")
         val expected = hash(result!!.refreshToken)
         assertTrue(slotUpdate.captured.toString().contains(expected))
     }
@@ -69,7 +71,7 @@ class AuthServiceTest {
         val collection = mockk<CoroutineCollection<User>>()
         val oldToken = "old-token"
         val oldHash = hash(oldToken)
-        val user = User(username = "user", passwordHash = "", refreshToken = oldHash)
+        val user = User(username = "user", email = "user@example.com", passwordHash = "", refreshToken = oldHash)
         val slotFind = slot<Bson>()
         val slotUpdate = slot<Bson>()
         coEvery { collection.findOne(capture(slotFind)) } returns user
@@ -79,6 +81,8 @@ class AuthServiceTest {
         val result = service.refresh(oldToken)
 
         assertTrue(result?.refreshToken?.isNotEmpty() == true)
+        assertTrue(result?.username == "user")
+        assertTrue(result?.email == "user@example.com")
         val expectedFind = slotFind.captured.toString()
         assertTrue(expectedFind.contains(oldHash))
         val expectedUpdate = hash(result!!.refreshToken)

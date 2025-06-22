@@ -326,6 +326,8 @@ components:
       properties:
         username:
           type: string
+        email:
+          type: string
         password:
           type: string
     LoginRequest:
@@ -346,6 +348,10 @@ components:
         accessToken:
           type: string
         refreshToken:
+          type: string
+        username:
+          type: string
+        email:
           type: string
     AccessToken:
       type: object
