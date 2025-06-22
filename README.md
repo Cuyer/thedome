@@ -120,7 +120,7 @@ docker run -e JWT_SECRET=supersecret -p 8080:8080 thedome
 
 ## Docker Compose
 
-You can run the project and its MongoDB dependency using Docker Compose. The provided `docker-compose.yml` sets up both services and handles networking and environment variables for you.
+You can run the project and its MongoDB dependency using Docker Compose. The provided `compose.yaml` sets up both services and handles networking and environment variables for you.
 
 ### Requirements
 - Docker and Docker Compose installed
@@ -133,7 +133,7 @@ You can run the project and its MongoDB dependency using Docker Compose. The pro
 - `API_KEY` – optional RustMaps API key (optional)
 - `PORT` – application port (defaults to `8080`)
 
-You can set these in the `docker-compose.yml` or via an `.env` file.
+You can set these in the `compose.yaml` or via an `.env` file.
 
 ### Build and Run
 
@@ -165,7 +165,7 @@ You can run the backend and MongoDB together using Docker Compose. The setup use
 - MongoDB exposes port `27017` (mapped to host `27017`).
 - MongoDB data is persisted in the `mongo-data` Docker volume.
 - The default MongoDB URI inside the container is `mongodb://mongo:27017/thedome`.
-- You can override environment variables such as `MONGODB_URI`, `FETCH_CRON`, `API_KEY`, and `PORT` in the `docker-compose.yml` or via an `.env` file.
+- You can override environment variables such as `MONGODB_URI`, `FETCH_CRON`, `API_KEY`, and `PORT` in the `compose.yaml` or via an `.env` file.
 
 To start everything:
 
