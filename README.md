@@ -125,7 +125,7 @@ You can run the project and its MongoDB dependency using Docker Compose. The pro
 ### Requirements
 - Docker and Docker Compose installed
 - The application is built using Eclipse Temurin JDK 21 (Alpine base image)
-- MongoDB is included as a service in the compose file
+- MongoDB 7 is included as a service in the compose file (image `mongo:7`) to avoid unexpected upgrades
 
 ### Environment Variables
 - `MONGODB_URI` – MongoDB connection string (defaults to `mongodb://mongo:27017/thedome` for the container)
@@ -159,7 +159,7 @@ MongoDB data is persisted in a Docker volume named `mongo-data`.
 
 ## Running with Docker
 
-You can run the backend and MongoDB together using Docker Compose. The setup uses Eclipse Temurin JDK 21 (Alpine) for the application and the latest MongoDB image. The application container is named `kotlin-thedome` and MongoDB is named `mongo`.
+You can run the backend and MongoDB together using Docker Compose. The setup uses Eclipse Temurin JDK 21 (Alpine) for the application and the MongoDB 7 image. The application container is named `kotlin-thedome` and MongoDB is named `mongo`.
 
 - The application exposes port `8080` (mapped to host `8080`).
 - MongoDB exposes port `27017` (mapped to host `27017`).
