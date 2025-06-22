@@ -38,6 +38,7 @@ import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
 import pl.cuyer.thedome.di.appModule
+import pl.cuyer.thedome.AppConfig
 import pl.cuyer.thedome.domain.ErrorResponse
 import pl.cuyer.thedome.exceptions.UserAlreadyExistsException
 import pl.cuyer.thedome.exceptions.InvalidCredentialsException
@@ -59,9 +60,10 @@ fun main() {
 }
 
 fun Application.module() {
+    val config = AppConfig.load(environment.config)
     install(Koin) {
         slf4jLogger()
-        modules(appModule)
+        modules(appModule(config))
     }
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
@@ -103,8 +105,8 @@ fun Application.module() {
         }
     }
 
-    val allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS")
     install(CORS) {
+        val allowedOriginsEnv = config.allowedOrigins
         if (allowedOriginsEnv.isNullOrBlank()) {
             anyHost()
         } else {
@@ -120,10 +122,10 @@ fun Application.module() {
         allowHeader(HttpHeaders.ContentType)
     }
 
-    val jwtAudience = System.getenv("JWT_AUDIENCE") ?: "thedomeAudience"
-    val jwtIssuer = System.getenv("JWT_ISSUER") ?: "thedomeIssuer"
-    val jwtRealm = System.getenv("JWT_REALM") ?: "thedomeRealm"
-    val jwtSecret = System.getenv("JWT_SECRET") ?: error("JWT_SECRET not set")
+    val jwtAudience = config.jwtAudience
+    val jwtIssuer = config.jwtIssuer
+    val jwtRealm = config.jwtRealm
+    val jwtSecret = config.jwtSecret
 
     install(Authentication) {
         jwt("auth-jwt") {
@@ -147,13 +149,10 @@ fun Application.module() {
         requestsPerMinute = 60
     }
 
-    val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
-
     val fetchService by inject<ServerFetchService>()
 
-    val fetchCron = System.getenv("FETCH_CRON") ?: "0 */10 * * *"
-    val schedulerClient = MongoClient.create(mongoUri)
-    logger.info("Scheduling fetch task with cron expression '$fetchCron'")
+    val schedulerClient = MongoClient.create(config.mongoUri)
+    logger.info("Scheduling fetch task with cron expression '${config.fetchCron}'")
 
     install(TaskScheduling) {
         mongoDb {
@@ -162,7 +161,7 @@ fun Application.module() {
         }
         task {
             name = "fetch-servers"
-            kronSchedule = { applyCron(fetchCron) }
+            kronSchedule = { applyCron(config.fetchCron) }
             task = { fetchService.fetchServers() }
         }
     }

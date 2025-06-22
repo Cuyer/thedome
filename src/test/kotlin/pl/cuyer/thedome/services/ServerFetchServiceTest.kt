@@ -44,7 +44,7 @@ class ServerFetchServiceTest {
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
         coEvery { collection.deleteMany(capture(slotFilter)) } returns mockk()
 
-        val service = ServerFetchService(client, collection)
+        val service = ServerFetchService(client, collection, "")
         service.fetchServers()
 
         assertEquals(2, slotOps.captured.size)
