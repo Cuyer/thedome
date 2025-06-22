@@ -53,7 +53,11 @@ val appModule = module {
     }
 
     single<CoroutineCollection<User>> {
-        get<CoroutineDatabase>().getCollection<User>("users")
+        val collection = get<CoroutineDatabase>().getCollection<User>("users")
+        runBlocking {
+            collection.ensureUniqueIndex(User::username)
+        }
+        collection
     }
 
     single { ServerFetchService(get(), get()) }
