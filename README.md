@@ -20,6 +20,7 @@ Environment variables:
 - `JWT_AUDIENCE` – JWT audience (default `thedomeAudience`)
 - `JWT_ISSUER` – JWT issuer (default `thedomeIssuer`)
 - `JWT_REALM` – authentication realm (default `thedomeRealm`)
+- `ALLOWED_ORIGINS` – comma-separated list of allowed CORS origins (useful in production)
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional filtering. Alongside pagination (`page` and `size`),
