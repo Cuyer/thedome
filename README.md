@@ -1,6 +1,6 @@
 # TheDome backend
 
-This project uses Ktor with MongoDB. The service periodically pulls Rust servers from the Battlemetrics API, saves them into MongoDB and exposes `/servers` endpoint which returns servers sorted by rank with pagination metadata. It also provides `/filters/options` for querying available filter values. Scheduled tasks are managed using the Ktor Task Scheduling plugin. Dependencies are wired using the Koin library.
+This project uses Ktor with MongoDB. The service periodically pulls Rust servers from the Battlemetrics API, saves them into MongoDB and exposes `/servers` endpoint which returns servers sorted by rank with pagination metadata. It also provides `/filters/options` for querying available filter values and exposes `/metrics` using Ktor's Micrometer plugin. Scheduled tasks are managed using the Ktor Task Scheduling plugin. Dependencies are wired using the Koin library.
 
 ## Running
 
