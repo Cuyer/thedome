@@ -78,8 +78,20 @@ fun Application.module() {
         }
     }
 
+    val allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS")
     install(CORS) {
-        anyHost()
+        if (allowedOriginsEnv.isNullOrBlank()) {
+            anyHost()
+        } else {
+            allowedOriginsEnv.split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { origin ->
+                val uri = try { java.net.URI(origin) } catch (_: Exception) { null }
+                if (uri != null && uri.host != null) {
+                    allowHost(uri.host, schemes = listOfNotNull(uri.scheme))
+                } else {
+                    allowHost(origin)
+                }
+            }
+        }
         allowHeader(HttpHeaders.ContentType)
     }
 

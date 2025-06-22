@@ -14,6 +14,7 @@ services:
       # API_KEY: ""  # Optional, set if you have a RustMaps API key
       # PORT: 8080  # Override if you want a different port
       # JWT_SECRET: secret
+      # ALLOWED_ORIGINS: "https://example.com,https://example2.com"  # Set allowed CORS origins in production
     depends_on:
       - mongo
     networks:
