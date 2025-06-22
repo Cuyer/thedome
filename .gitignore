@@ -23,3 +23,9 @@ replay_pid*
 
 # Kotlin Gradle plugin data
 .kotlin/
+
+# Environment variable files
+.env
+.env.*
+*.env
+.envrc
