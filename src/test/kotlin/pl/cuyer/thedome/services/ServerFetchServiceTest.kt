@@ -18,6 +18,7 @@ import com.mongodb.client.model.DeleteOptions
 import com.mongodb.client.model.ReplaceOneModel
 import org.bson.conversions.Bson
 import org.litote.kmongo.coroutine.CoroutineCollection
+import org.litote.kmongo.coroutine.CoroutineFindPublisher
 import pl.cuyer.thedome.domain.battlemetrics.*
 
 class ServerFetchServiceTest {
@@ -39,10 +40,13 @@ class ServerFetchServiceTest {
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
 
         val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val findPub = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
+        every { collection.find(any<Bson>()) } returns findPub
+        coEvery { findPub.toList() } returns emptyList()
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
         val slotFilter = slot<Bson>()
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
-        coEvery { collection.deleteMany(capture(slotFilter)) } returns mockk()
+        coEvery { collection.deleteMany(capture(slotFilter), any<DeleteOptions>()) } returns mockk()
 
         val service = ServerFetchService(client, collection, "")
         service.fetchServers()
@@ -51,5 +55,50 @@ class ServerFetchServiceTest {
         val ids = slotOps.captured.map { it.replacement.id }.toSet()
         assertEquals(setOf("1", "2"), ids)
         coVerify(exactly = 1) { collection.deleteMany(any<Bson>(), any<DeleteOptions>()) }
+    }
+
+    @Test
+    fun `fetchServers only updates newer data`() = runBlocking {
+        val new1 = BattlemetricsServerContent(
+            attributes = Attributes(id = "a1", updatedAt = "2024-01-02T00:00:00Z"),
+            id = "1"
+        )
+        val new2 = BattlemetricsServerContent(
+            attributes = Attributes(id = "a2", updatedAt = "2024-01-01T00:00:00Z"),
+            id = "2"
+        )
+        val page = BattlemetricsPage(data = listOf(new1, new2), links = Links(null))
+
+        val engine = MockEngine {
+            respond(
+                content = ByteReadChannel(json.encodeToString(page)),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
+
+        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val findPub = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
+        every { collection.find(any<Bson>()) } returns findPub
+        val existing1 = BattlemetricsServerContent(
+            attributes = Attributes(id = "a1", updatedAt = "2024-01-01T00:00:00Z"),
+            id = "1"
+        )
+        val existing2 = BattlemetricsServerContent(
+            attributes = Attributes(id = "a2", updatedAt = "2024-01-02T00:00:00Z"),
+            id = "2"
+        )
+        coEvery { findPub.toList() } returns listOf(existing1, existing2)
+
+        val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
+        coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
+        coEvery { collection.deleteMany(any<Bson>(), any<DeleteOptions>()) } returns mockk()
+
+        val service = ServerFetchService(client, collection, "")
+        service.fetchServers()
+
+        assertEquals(1, slotOps.captured.size)
+        assertEquals("1", slotOps.captured.first().replacement.id)
     }
 }

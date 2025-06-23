@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.datetime.Instant
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsPage
@@ -61,14 +62,34 @@ class ServerFetchService(
                 return
             }
 
-            val replaceOperations = servers.map { server ->
-                ReplaceOneModel(
-                    Filters.eq("id", server.id),
-                    server,
-                    ReplaceOptions().upsert(true)
-                )
+            val ids = servers.map { it.id }
+            val existing = collection
+                .find(Filters.`in`("id", ids))
+                .toList()
+                .associateBy { it.id }
+
+            val replaceOperations = servers.mapNotNull { server ->
+                val old = existing[server.id]
+                val newTime = server.attributes.updatedAt?.let {
+                    runCatching { Instant.parse(it) }.getOrNull()
+                }
+                val oldTime = old?.attributes?.updatedAt?.let {
+                    runCatching { Instant.parse(it) }.getOrNull()
+                }
+                if (old == null || (newTime != null && oldTime != null && newTime > oldTime)) {
+                    ReplaceOneModel(
+                        Filters.eq("id", server.id),
+                        server,
+                        ReplaceOptions().upsert(true)
+                    )
+                } else {
+                    null
+                }
             }
-            collection.bulkWrite(replaceOperations, BulkWriteOptions().ordered(false))
+
+            if (replaceOperations.isNotEmpty()) {
+                collection.bulkWrite(replaceOperations, BulkWriteOptions().ordered(false))
+            }
 
             val idsToKeep = servers.map { it.id }
             collection.deleteMany(Filters.nin("id", idsToKeep))
