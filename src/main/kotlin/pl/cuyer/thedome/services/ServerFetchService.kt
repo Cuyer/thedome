@@ -7,14 +7,12 @@ import io.ktor.client.request.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.datetime.Clock
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsPage
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.battlemetrics.extractMapId
 import pl.cuyer.thedome.domain.battlemetrics.fetchMapIcon
-import kotlin.time.Duration.Companion.days
 
 class ServerFetchService(
     private val client: HttpClient,
@@ -72,27 +70,13 @@ class ServerFetchService(
             }
             collection.bulkWrite(replaceOperations, BulkWriteOptions().ordered(false))
 
-            logger.info("Upserted ${servers.size} servers.")
+            val idsToKeep = servers.map { it.id }
+            collection.deleteMany(Filters.nin("id", idsToKeep))
+
+            logger.info("Upserted ${servers.size} servers and removed stale entries.")
 
         } catch (e: Exception) {
             logger.error("Failed to fetch or update servers: ${e.message}", e)
-        }
-    }
-
-    suspend fun cleanupServers() {
-        val cutoff = Clock.System.now() - 60.days
-        val cutoffIso = cutoff.toString()
-        logger.info("Removing servers not updated since $cutoffIso")
-
-        try {
-            val filter = Filters.or(
-                Filters.lt("attributes.updatedAt", cutoffIso),
-                Filters.exists("attributes.updatedAt", false)
-            )
-            val result = collection.deleteMany(filter)
-            logger.info("Removed ${result.deletedCount} stale servers.")
-        } catch (e: Exception) {
-            logger.error("Failed to clean up servers: ${e.message}", e)
         }
     }
 }
