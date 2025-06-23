@@ -8,6 +8,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Instant
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsPage
@@ -52,7 +55,15 @@ class ServerFetchService(
                         }
                     }.awaitAll()
                 }
-                servers += pageServers
+                val currentYear = Clock.System.now().toLocalDateTime(TimeZone.UTC).year
+                val filteredServers = pageServers.filter { server ->
+                    val year = server.attributes.updatedAt
+                        ?.let { runCatching { Instant.parse(it) }.getOrNull() }
+                        ?.toLocalDateTime(TimeZone.UTC)
+                        ?.year
+                    year == null || year >= currentYear
+                }
+                servers += filteredServers
 
                 url = page.links?.next
             }
