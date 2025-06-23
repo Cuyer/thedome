@@ -1,10 +1,7 @@
 package pl.cuyer.thedome.services
 
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.mockk
+import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.flow.firstOrNull
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import com.mongodb.kotlin.client.coroutine.MongoCollection
@@ -15,6 +12,8 @@ import com.mongodb.client.model.InsertOneOptions
 import org.mindrot.jbcrypt.BCrypt
 import java.security.MessageDigest
 import io.mockk.slot
+import com.mongodb.kotlin.client.coroutine.FindFlow
+import pl.cuyer.thedome.util.SimpleFindPublisher
 
 class AuthServiceTest {
 
@@ -24,7 +23,7 @@ class AuthServiceTest {
     }
     @Test
     fun `registerAnonymous stores user`() = runBlocking {
-        val collection = mockk<MongoCollection<User>>()
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
         coEvery { collection.insertOne(any(), any<InsertOneOptions>()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
@@ -36,11 +35,15 @@ class AuthServiceTest {
     }
     @Test
     fun `upgradeAnonymous converts user`() = runBlocking {
-        val collection = mockk<MongoCollection<User>>()
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
         val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null, favorites = emptyList())
         val updated = anon.copy(username = "newuser")
-        coEvery { collection.find(any<Bson>()).firstOrNull() } returnsMany listOf(anon, null, updated)
-        coEvery { collection.updateOne(any<Bson>(), any<Bson>()) } returns mockk()
+        every { collection.find(any<Bson>()) } returnsMany listOf(
+            FindFlow(SimpleFindPublisher(listOf(anon))),
+            FindFlow(SimpleFindPublisher(emptyList())),
+            FindFlow(SimpleFindPublisher(listOf(updated)))
+        )
+        coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
         val result = service.upgradeAnonymous("anon-123", "newuser", "pass")
@@ -51,12 +54,15 @@ class AuthServiceTest {
 
     @Test
     fun `login hashes refresh token`() = runBlocking {
-        val collection = mockk<MongoCollection<User>>()
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
         val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
         val user = User(username = "user", email = "user@example.com", passwordHash = passwordHash, favorites = emptyList())
         val slotUpdate = slot<Bson>()
-        coEvery { collection.find(any<Bson>()).firstOrNull() } returns user
-        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate)) } returns mockk()
+        every { collection.find(any<Bson>()) } returnsMany listOf(
+            FindFlow(SimpleFindPublisher(listOf(user))),
+            FindFlow(SimpleFindPublisher(listOf(user)))
+        )
+        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
         val result = service.login("user", "pass")
@@ -70,14 +76,14 @@ class AuthServiceTest {
 
     @Test
     fun `refresh compares hashed token`() = runBlocking {
-        val collection = mockk<MongoCollection<User>>()
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
         val oldToken = "old-token"
         val oldHash = hash(oldToken)
         val user = User(username = "user", email = "user@example.com", passwordHash = "", refreshToken = oldHash, favorites = emptyList())
         val slotFind = slot<Bson>()
         val slotUpdate = slot<Bson>()
-        coEvery { collection.find(capture(slotFind)).firstOrNull() } returns user
-        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate)) } returns mockk()
+        every { collection.find(capture(slotFind)) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
         val result = service.refresh(oldToken)
