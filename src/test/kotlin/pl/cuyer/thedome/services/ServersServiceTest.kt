@@ -143,4 +143,25 @@ class ServersServiceTest {
         assertTrue(filter.contains("modded", ignoreCase = true))
         assertTrue(filter.contains("official"))
     }
+
+    @Test
+    fun `getServers marks favorites`() = runBlocking {
+        val attr = Attributes(id = "a5", name = "Fav Server")
+        val server = BattlemetricsServerContent(attributes = attr, id = "5")
+
+        val publisher = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
+        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        every { collection.find(any<Bson>()) } returns publisher
+        every { publisher.sort(any<Bson>()) } returns publisher
+        every { publisher.skip(any()) } returns publisher
+        every { publisher.limit(any()) } returns publisher
+        coEvery { publisher.toList() } returns listOf(server)
+        coEvery { collection.countDocuments(any<Bson>()) } returns 1
+        coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
+
+        val service = ServersService(collection)
+        val response = service.getServers(Servers(), listOf("5"))
+
+        assertTrue(response.servers.first().isFavorite)
+    }
 }

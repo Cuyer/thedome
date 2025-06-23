@@ -13,9 +13,11 @@ import pl.cuyer.thedome.resources.Servers
 import java.util.regex.Pattern
 import org.slf4j.LoggerFactory
 
-class ServersService(private val collection: CoroutineCollection<BattlemetricsServerContent>) {
+class ServersService(
+    private val collection: CoroutineCollection<BattlemetricsServerContent>
+) {
     private val logger = LoggerFactory.getLogger(ServersService::class.java)
-    suspend fun getServers(params: Servers): ServersResponse {
+    suspend fun getServers(params: Servers, favorites: List<String>? = null): ServersResponse {
         logger.info("Querying servers with params: $params")
         val page = params.page ?: 1
         val size = params.size ?: 20
@@ -72,6 +74,13 @@ class ServersService(private val collection: CoroutineCollection<BattlemetricsSe
             .map { it.toServerInfo() }
             .filter { params.wipeSchedule == null || it.wipeSchedule == params.wipeSchedule }
 
+        val favoritesList = favorites ?: emptyList()
+
+        val enriched = serverInfos.map { info ->
+            val fav = info.id?.toString()?.let { favoritesList.contains(it) } ?: false
+            info.copy(isFavorite = fav)
+        }
+
         val totalPages = if (size == 0) 0 else ((totalItems + size - 1) / size).toInt()
 
         val response = ServersResponse(
@@ -79,7 +88,7 @@ class ServersService(private val collection: CoroutineCollection<BattlemetricsSe
             size = size,
             totalPages = totalPages,
             totalItems = totalItems,
-            servers = serverInfos
+            servers = enriched
         )
         logger.info("Returning ${'$'}{serverInfos.size} servers for page $page")
         return response

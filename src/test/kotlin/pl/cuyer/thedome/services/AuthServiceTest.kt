@@ -36,8 +36,9 @@ class AuthServiceTest {
     @Test
     fun `upgradeAnonymous converts user`() = runBlocking {
         val collection = mockk<CoroutineCollection<User>>()
-        val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null)
-        coEvery { collection.findOne(any<Bson>()) } returnsMany listOf(anon, null)
+        val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null, favorites = emptyList())
+        val updated = anon.copy(username = "newuser")
+        coEvery { collection.findOne(any<Bson>()) } returnsMany listOf(anon, null, updated)
         coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
@@ -51,7 +52,7 @@ class AuthServiceTest {
     fun `login hashes refresh token`() = runBlocking {
         val collection = mockk<CoroutineCollection<User>>()
         val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
-        val user = User(username = "user", email = "user@example.com", passwordHash = passwordHash)
+        val user = User(username = "user", email = "user@example.com", passwordHash = passwordHash, favorites = emptyList())
         val slotUpdate = slot<Bson>()
         coEvery { collection.findOne(any<Bson>()) } returns user
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
@@ -71,7 +72,7 @@ class AuthServiceTest {
         val collection = mockk<CoroutineCollection<User>>()
         val oldToken = "old-token"
         val oldHash = hash(oldToken)
-        val user = User(username = "user", email = "user@example.com", passwordHash = "", refreshToken = oldHash)
+        val user = User(username = "user", email = "user@example.com", passwordHash = "", refreshToken = oldHash, favorites = emptyList())
         val slotFind = slot<Bson>()
         val slotUpdate = slot<Bson>()
         coEvery { collection.findOne(capture(slotFind)) } returns user

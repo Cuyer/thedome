@@ -22,6 +22,7 @@ import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
+import pl.cuyer.thedome.services.FavoritesService
 import pl.cuyer.thedome.AppConfig
 
 fun appModule(config: AppConfig) = module {
@@ -76,4 +77,5 @@ fun appModule(config: AppConfig) = module {
     single { ServersService(get(named("servers"))) }
     single { FiltersService(get(named("servers"))) }
     single { AuthService(get(named("users")), config.jwtSecret, config.jwtIssuer, config.jwtAudience) }
+    single { FavoritesService(get(named("users")), get(named("servers")), config.favoritesLimit) }
 }

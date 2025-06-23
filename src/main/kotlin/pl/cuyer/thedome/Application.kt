@@ -39,9 +39,11 @@ import pl.cuyer.thedome.services.ServerFetchService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
+import pl.cuyer.thedome.services.FavoritesService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
 import pl.cuyer.thedome.routes.AuthEndpoint
+import pl.cuyer.thedome.routes.FavoritesEndpoint
 import io.ktor.server.plugins.ratelimit.*
 import kotlin.time.Duration.Companion.seconds
 import org.koin.ktor.plugin.Koin
@@ -57,6 +59,7 @@ import pl.cuyer.thedome.exceptions.InvalidRefreshTokenException
 import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
 import pl.cuyer.thedome.exceptions.FiltersOptionsException
 import pl.cuyer.thedome.exceptions.ServersQueryException
+import pl.cuyer.thedome.exceptions.FavoriteLimitException
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 
@@ -101,6 +104,10 @@ fun Application.module() {
         exception<ServersQueryException> { call, cause ->
             logException(call, cause)
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
+        }
+        exception<FavoriteLimitException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
         }
         exception<Throwable> { call, cause ->
             logException(call, cause)
@@ -211,9 +218,11 @@ fun Application.module() {
     val serversService by inject<ServersService>()
     val filtersService by inject<FiltersService>()
     val authService by inject<AuthService>()
-    val serversEndpoint = ServersEndpoint(serversService)
+    val favoritesService by inject<FavoritesService>()
+    val serversEndpoint = ServersEndpoint(serversService, favoritesService)
     val filtersEndpoint = FiltersEndpoint(filtersService)
     val authEndpoint = AuthEndpoint(authService)
+    val favoritesEndpoint = FavoritesEndpoint(favoritesService)
 
     routing {
         authEndpoint.register(this)
@@ -230,6 +239,7 @@ fun Application.module() {
             }
             serversEndpoint.register(this)
             filtersEndpoint.register(this)
+            favoritesEndpoint.register(this)
         }
         get("/metrics") { call.respondText(metricsRegistry.scrape()) }
         swaggerUI(path = "swagger")
