@@ -60,7 +60,10 @@ fun appModule(config: AppConfig) = module {
         runBlocking {
             collection.ensureUniqueIndex(User::username)
             val partial = Document("email", Document("\$type", "string"))
-            val options = IndexOptions().unique(true).partialFilterExpression(partial)
+            val options = IndexOptions()
+                .name("email_1")
+                .unique(true)
+                .partialFilterExpression(partial)
             collection.createIndex(Document("email", 1), options)
         }
         collection
