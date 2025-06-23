@@ -59,7 +59,7 @@ fun appModule(config: AppConfig) = module {
         val collection = get<CoroutineDatabase>().getCollection<User>("users")
         runBlocking {
             collection.ensureUniqueIndex(User::username)
-            val partial = Document("email", Document("\$exists", true).append("\$ne", null))
+            val partial = Document("email", Document("\$type", "string"))
             val options = IndexOptions().unique(true).partialFilterExpression(partial)
             collection.createIndex(Document("email", 1), options)
         }
