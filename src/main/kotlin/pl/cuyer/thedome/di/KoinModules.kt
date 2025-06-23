@@ -74,7 +74,7 @@ fun appModule(config: AppConfig) = module {
     }
 
     single { ServerFetchService(get(), get(named("servers")), config.apiKey) }
-    single { ServersService(get(named("servers")), get(named("users"))) }
+    single { ServersService(get(named("servers"))) }
     single { FiltersService(get(named("servers"))) }
     single { AuthService(get(named("users")), config.jwtSecret, config.jwtIssuer, config.jwtAudience) }
     single { FavoritesService(get(named("users")), get(named("servers")), config.favoritesLimit) }

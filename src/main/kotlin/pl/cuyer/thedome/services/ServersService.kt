@@ -9,18 +9,15 @@ import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
 import pl.cuyer.thedome.domain.server.Order
 import pl.cuyer.thedome.domain.server.ServerInfo
 import pl.cuyer.thedome.domain.server.ServersResponse
-import pl.cuyer.thedome.domain.auth.User
-import org.litote.kmongo.eq
 import pl.cuyer.thedome.resources.Servers
 import java.util.regex.Pattern
 import org.slf4j.LoggerFactory
 
 class ServersService(
-    private val collection: CoroutineCollection<BattlemetricsServerContent>,
-    private val users: CoroutineCollection<User>
+    private val collection: CoroutineCollection<BattlemetricsServerContent>
 ) {
     private val logger = LoggerFactory.getLogger(ServersService::class.java)
-    suspend fun getServers(params: Servers, username: String? = null): ServersResponse {
+    suspend fun getServers(params: Servers, favorites: List<String>? = null): ServersResponse {
         logger.info("Querying servers with params: $params")
         val page = params.page ?: 1
         val size = params.size ?: 20
@@ -77,12 +74,10 @@ class ServersService(
             .map { it.toServerInfo() }
             .filter { params.wipeSchedule == null || it.wipeSchedule == params.wipeSchedule }
 
-        val favorites = username?.let {
-            users.findOne(User::username eq it)?.favorites ?: emptyList()
-        } ?: emptyList()
+        val favoritesList = favorites ?: emptyList()
 
         val enriched = serverInfos.map { info ->
-            val fav = info.id?.toString()?.let { favorites.contains(it) } ?: false
+            val fav = info.id?.toString()?.let { favoritesList.contains(it) } ?: false
             info.copy(isFavorite = fav)
         }
 

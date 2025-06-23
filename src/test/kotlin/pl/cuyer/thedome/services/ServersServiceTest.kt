@@ -13,8 +13,6 @@ import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.domain.server.*
 import pl.cuyer.thedome.resources.Servers
 import pl.cuyer.thedome.services.ServersService
-import pl.cuyer.thedome.domain.auth.User
-import org.litote.kmongo.eq
 
 class ServersServiceTest {
     @Test
@@ -32,9 +30,7 @@ class ServersServiceTest {
         coEvery { collection.countDocuments(any<Bson>()) } returns 1
         coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
 
-        val users = mockk<CoroutineCollection<User>>()
-        coEvery { users.findOne(any<Bson>()) } returns null
-        val service = ServersService(collection, users)
+        val service = ServersService(collection)
         val response = service.getServers(Servers(name = "cool"))
 
         assertEquals(1, response.totalItems)
@@ -57,9 +53,7 @@ class ServersServiceTest {
         coEvery { collection.countDocuments(any<Bson>()) } returns 1
         coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
 
-        val users = mockk<CoroutineCollection<User>>()
-        coEvery { users.findOne(any<Bson>()) } returns null
-        val service = ServersService(collection, users)
+        val service = ServersService(collection)
         val response = service.getServers(Servers(region = Region.EUROPE))
 
         assertEquals(1, response.totalItems)
@@ -85,9 +79,7 @@ class ServersServiceTest {
         coEvery { collection.countDocuments(any<Bson>()) } returns 1
         coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
 
-        val users = mockk<CoroutineCollection<User>>()
-        coEvery { users.findOne(any<Bson>()) } returns null
-        val service = ServersService(collection, users)
+        val service = ServersService(collection)
         val response = service.getServers(Servers(difficulty = Difficulty.VANILLA))
 
         assertEquals(1, response.totalItems)
@@ -113,9 +105,7 @@ class ServersServiceTest {
         coEvery { collection.countDocuments(any<Bson>()) } returns 1
         coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
 
-        val users = mockk<CoroutineCollection<User>>()
-        coEvery { users.findOne(any<Bson>()) } returns null
-        val service = ServersService(collection, users)
+        val service = ServersService(collection)
         val response = service.getServers(Servers(ranking = 50, playerCount = 10))
 
         assertEquals(1, response.totalItems)
@@ -143,9 +133,7 @@ class ServersServiceTest {
         coEvery { collection.countDocuments(any<Bson>()) } returns 1
         coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
 
-        val users = mockk<CoroutineCollection<User>>()
-        coEvery { users.findOne(any<Bson>()) } returns null
-        val service = ServersService(collection, users)
+        val service = ServersService(collection)
         val response = service.getServers(Servers(modded = true, official = true))
 
         assertEquals(1, response.totalItems)
@@ -171,12 +159,8 @@ class ServersServiceTest {
         coEvery { collection.countDocuments(any<Bson>()) } returns 1
         coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
 
-        val users = mockk<CoroutineCollection<User>>()
-        val user = User(username = "user", email = null, passwordHash = "", favorites = listOf("5"))
-        coEvery { users.findOne(any<Bson>()) } returns user
-
-        val service = ServersService(collection, users)
-        val response = service.getServers(Servers(), "user")
+        val service = ServersService(collection)
+        val response = service.getServers(Servers(), listOf("5"))
 
         assertTrue(response.servers.first().isFavorite)
     }

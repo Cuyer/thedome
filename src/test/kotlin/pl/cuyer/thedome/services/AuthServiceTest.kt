@@ -37,7 +37,8 @@ class AuthServiceTest {
     fun `upgradeAnonymous converts user`() = runBlocking {
         val collection = mockk<CoroutineCollection<User>>()
         val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null, favorites = emptyList())
-        coEvery { collection.findOne(any<Bson>()) } returnsMany listOf(anon, null)
+        val updated = anon.copy(username = "newuser")
+        coEvery { collection.findOne(any<Bson>()) } returnsMany listOf(anon, null, updated)
         coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
