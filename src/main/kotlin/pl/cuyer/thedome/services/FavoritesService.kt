@@ -19,7 +19,7 @@ class FavoritesService(
     suspend fun addFavorite(username: String, serverId: String): Boolean {
         val user = users.findOne(User::username eq username) ?: return false
         if (user.favorites.contains(serverId)) return true
-        if (user.favorites.size >= limit) return false
+        if (!user.subscriber && user.favorites.size >= limit) return false
         users.updateOne(User::username eq username, push(User::favorites, serverId))
         return true
     }

@@ -25,7 +25,7 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 - `ALLOWED_ORIGINS` – comma-separated list of allowed CORS origins (useful in production)
 - `ANON_RATE_LIMIT` – requests per minute allowed for anonymous users (default `60`)
 - `ANON_REFILL_PERIOD` – seconds per anonymous rate limit window (default `60`)
-- `FAVORITES_LIMIT` – maximum number of favourite servers per user (default `10`)
+- `FAVORITES_LIMIT` – maximum favourites for non-subscribers and anonymous users (default `10`)
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional filtering. Alongside pagination (`page` and `size`),
@@ -111,8 +111,8 @@ server is one of your favourites.
 
 ## Favorites
 
-Authenticated users can manage a list of favourite servers. The number of
-favourites is limited by the `FAVORITES_LIMIT` setting.
+Authenticated users can manage a list of favourite servers. Non-subscribers
+and anonymous users may only store up to `FAVORITES_LIMIT` servers.
 
 ```
 GET    /favorites            # list favourite servers (paged)

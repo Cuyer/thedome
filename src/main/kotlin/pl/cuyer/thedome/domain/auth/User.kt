@@ -14,5 +14,6 @@ data class User(
     val email: String? = null,
     val passwordHash: String,
     val refreshToken: String? = null,
+    val subscriber: Boolean = false,
     val favorites: List<String> = emptyList()
 )

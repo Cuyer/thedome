@@ -44,6 +44,22 @@ class FavoritesServiceTest {
     }
 
     @Test
+    fun `addFavorite ignores limit for subscriber`() = runBlocking {
+        val users = mockk<CoroutineCollection<User>>()
+        val servers = mockk<CoroutineCollection<BattlemetricsServerContent>>(relaxed = true)
+        val slotUpdate = slot<Bson>()
+        val user = User(username = "user", email = null, passwordHash = "", favorites = listOf("1", "2", "3"), subscriber = true)
+        coEvery { users.findOne(User::username eq "user") } returns user
+        coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
+        val service = FavoritesService(users, servers, 3)
+
+        val result = service.addFavorite("user", "4")
+
+        assertTrue(result)
+        assertTrue(slotUpdate.captured.toString().contains("4"))
+    }
+
+    @Test
     fun `removeFavorite pulls server id`() = runBlocking {
         val users = mockk<CoroutineCollection<User>>()
         val servers = mockk<CoroutineCollection<BattlemetricsServerContent>>(relaxed = true)
