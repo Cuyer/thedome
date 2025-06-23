@@ -62,7 +62,7 @@ class ServerExtensionsAdditionalTest {
         val rustMaps = RustMaps(
             thumbnailUrl = "https://example.com/maps/abc/thumbnail.png",
             imageIconUrl = "icon.png",
-            mapUrl = "https://example.com/map",
+            url = "https://example.com/map",
             seed = 123L,
             size = 4000,
             monumentCount = 12
