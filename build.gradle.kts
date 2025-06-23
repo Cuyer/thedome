@@ -6,7 +6,7 @@ plugins {
 }
 
 val ktorVersion = "3.2.0"
-val kmongoVersion = "4.11.0"
+val mongoDriverVersion = "5.5.1"
 val logback = "1.5.18"
 val ktorPluginsVersion = "2.2.1"
 val koinVersion = "3.5.3"
@@ -36,7 +36,9 @@ dependencies {
     implementation("io.github.flaxoos:ktor-server-task-scheduling-core:$ktorPluginsVersion")
     implementation("io.github.flaxoos:ktor-server-task-scheduling-mongodb:$ktorPluginsVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
-    implementation("org.litote.kmongo:kmongo-coroutine-serialization:$kmongoVersion")
+    implementation("org.mongodb:bson-kotlinx:$mongoDriverVersion")
+    implementation("org.mongodb:mongodb-driver-kotlin-coroutine:$mongoDriverVersion")
+    implementation("org.mongodb:mongodb-driver-kotlin-extensions:$mongoDriverVersion")
     implementation(kotlin("reflect"))
     implementation("ch.qos.logback:logback-classic:$logback")
     implementation("io.insert-koin:koin-core:$koinVersion")

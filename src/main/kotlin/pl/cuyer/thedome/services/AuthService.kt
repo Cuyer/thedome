@@ -2,9 +2,10 @@ package pl.cuyer.thedome.services
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import org.litote.kmongo.coroutine.CoroutineCollection
-import org.litote.kmongo.eq
-import org.litote.kmongo.setValue
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.model.Filters.eq
+import com.mongodb.kotlin.client.model.Updates.set
+import kotlinx.coroutines.flow.firstOrNull
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.domain.auth.TokenPair
 import pl.cuyer.thedome.domain.auth.AccessToken
@@ -15,7 +16,7 @@ import java.security.MessageDigest
 import org.mindrot.jbcrypt.BCrypt
 
 class AuthService(
-    private val collection: CoroutineCollection<User>,
+    private val collection: MongoCollection<User>,
     private val jwtSecret: String,
     private val jwtIssuer: String,
     private val jwtAudience: String
@@ -30,7 +31,7 @@ class AuthService(
 
     suspend fun register(username: String, email: String, password: String): TokenPair? {
         logger.info("Registering user: $username")
-        val existing = collection.findOne(User::username eq username) ?: collection.findOne(User::email eq email)
+        val existing = collection.find(eq(User::username, username)).firstOrNull() ?: collection.find(eq(User::email, email)).firstOrNull()
         if (existing != null) return null
         val hash = BCrypt.hashpw(password, BCrypt.gensalt())
         val refresh = generateRefreshToken()
@@ -52,27 +53,27 @@ class AuthService(
 
     suspend fun upgradeAnonymous(currentUsername: String, newUsername: String, password: String): TokenPair? {
         logger.info("Upgrading anonymous user $currentUsername to $newUsername")
-        val anon = collection.findOne(User::username eq currentUsername) ?: return null
+        val anon = collection.find(eq(User::username, currentUsername)).firstOrNull() ?: return null
         if (!currentUsername.startsWith("anon-") || anon.passwordHash.isNotEmpty()) return null
-        if (collection.findOne(User::username eq newUsername) != null) return null
+        if (collection.find(eq(User::username, newUsername)).firstOrNull() != null) return null
         val hash = BCrypt.hashpw(password, BCrypt.gensalt())
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
-        collection.updateOne(User::username eq currentUsername, setValue(User::username, newUsername))
-        collection.updateOne(User::username eq newUsername, setValue(User::passwordHash, hash))
-        collection.updateOne(User::username eq newUsername, setValue(User::refreshToken, hashedRefresh))
+        collection.updateOne(eq(User::username, currentUsername), set(User::username, newUsername))
+        collection.updateOne(eq(User::username, newUsername), set(User::passwordHash, hash))
+        collection.updateOne(eq(User::username, newUsername), set(User::refreshToken, hashedRefresh))
         logger.info("Anonymous user $currentUsername upgraded to $newUsername")
-        val updated = collection.findOne(User::username eq newUsername) ?: return null
+        val updated = collection.find(eq(User::username, newUsername)).firstOrNull() ?: return null
         return TokenPair(generateAccessToken(updated), refresh, newUsername, updated.email)
     }
 
     suspend fun login(username: String, password: String): TokenPair? {
         logger.info("User $username attempting login")
-        val user = collection.findOne(User::username eq username) ?: collection.findOne(User::email eq username) ?: return null
+        val user = collection.find(eq(User::username, username)).firstOrNull() ?: collection.find(eq(User::email, username)).firstOrNull() ?: return null
         if (!BCrypt.checkpw(password, user.passwordHash)) return null
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
-        collection.updateOne(User::username eq user.username, setValue(User::refreshToken, hashedRefresh))
+        collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
         logger.info("User ${'$'}{user.username} logged in")
         return TokenPair(generateAccessToken(user), refresh, user.username, user.email)
     }
@@ -80,10 +81,10 @@ class AuthService(
     suspend fun refresh(refreshToken: String): TokenPair? {
         logger.info("Refreshing token")
         val hashed = hashToken(refreshToken)
-        val user = collection.findOne(User::refreshToken eq hashed) ?: return null
+        val user = collection.find(eq(User::refreshToken, hashed)).firstOrNull() ?: return null
         val newRefresh = generateRefreshToken()
         val hashedNew = hashToken(newRefresh)
-        collection.updateOne(User::username eq user.username, setValue(User::refreshToken, hashedNew))
+        collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedNew))
         logger.info("Issued new refresh token for ${'$'}{user.username}")
         return TokenPair(generateAccessToken(user), newRefresh, user.username, user.email)
     }

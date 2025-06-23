@@ -20,8 +20,9 @@ import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.DeleteOptions
 import com.mongodb.client.model.ReplaceOneModel
 import org.bson.conversions.Bson
-import org.litote.kmongo.coroutine.CoroutineCollection
-import org.litote.kmongo.coroutine.CoroutineFindPublisher
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.coroutine.FindFlow
+import kotlinx.coroutines.flow.toList
 import pl.cuyer.thedome.domain.battlemetrics.*
 
 class ServerFetchServiceTest {
@@ -42,8 +43,8 @@ class ServerFetchServiceTest {
         }
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
 
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
-        val findPub = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
+        val findPub = mockk<FindFlow<BattlemetricsServerContent>>()
         every { collection.find(any<Bson>()) } returns findPub
         coEvery { findPub.toList() } returns emptyList()
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
@@ -82,8 +83,8 @@ class ServerFetchServiceTest {
         }
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
 
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
-        val findPub = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
+        val findPub = mockk<FindFlow<BattlemetricsServerContent>>()
         every { collection.find(any<Bson>()) } returns findPub
         val existing1 = BattlemetricsServerContent(
             attributes = Attributes(id = "a1", updatedAt = "${year}-01-01T00:00:00Z"),
@@ -129,8 +130,8 @@ class ServerFetchServiceTest {
         }
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
 
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
-        val findPub = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
+        val findPub = mockk<FindFlow<BattlemetricsServerContent>>()
         every { collection.find(any<Bson>()) } returns findPub
         coEvery { findPub.toList() } returns emptyList()
 

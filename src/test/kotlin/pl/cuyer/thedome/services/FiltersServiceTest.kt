@@ -4,14 +4,16 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.bson.BsonDocument
 import org.bson.BsonString
 import org.bson.conversions.Bson
-import org.litote.kmongo.coroutine.CoroutineCollection
-import org.litote.kmongo.coroutine.CoroutineFindPublisher
-import com.mongodb.reactivestreams.client.MongoCollection
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.coroutine.AggregateFlow
+import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.reactivestreams.client.AggregatePublisher
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
@@ -29,9 +31,7 @@ import pl.cuyer.thedome.domain.server.*
 class FiltersServiceTest {
     @Test
     fun `getOptions aggregates data`() = runBlocking {
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
-        val mongoCollection = mockk<MongoCollection<BattlemetricsServerContent>>()
-        every { collection.collection } returns mongoCollection
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
 
         val flagsDocs = listOf(
             BsonDocument("_id", BsonString("GB")),
@@ -53,17 +53,17 @@ class FiltersServiceTest {
             BsonDocument("_id", BsonString("hardcore")),
             BsonDocument("_id", BsonString("unknown"))
         )
-        every { mongoCollection.aggregate(any<List<Bson>>(), BsonDocument::class.java) } returnsMany listOf(
-            SimpleAggregatePublisher(flagsDocs),
-            SimpleAggregatePublisher(mapsDocs),
-            SimpleAggregatePublisher(regionsDocs),
-            SimpleAggregatePublisher(difficultyDocs)
+        every { collection.aggregate<BsonDocument>(any<List<Bson>>()) } returnsMany listOf(
+            AggregateFlow(SimpleAggregatePublisher(flagsDocs)),
+            AggregateFlow(SimpleAggregatePublisher(mapsDocs)),
+            AggregateFlow(SimpleAggregatePublisher(regionsDocs)),
+            AggregateFlow(SimpleAggregatePublisher(difficultyDocs))
         )
 
-        val pubRanking = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val pubPlayers = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val pubGroup = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val pubWipes = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
+        val pubRanking = mockk<FindFlow<BattlemetricsServerContent>>()
+        val pubPlayers = mockk<FindFlow<BattlemetricsServerContent>>()
+        val pubGroup = mockk<FindFlow<BattlemetricsServerContent>>()
+        val pubWipes = mockk<FindFlow<BattlemetricsServerContent>>()
         every { collection.find() } returnsMany listOf(pubRanking, pubPlayers, pubGroup, pubWipes)
 
         every { pubRanking.sort(any<Bson>()) } returns pubRanking

@@ -4,10 +4,11 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.toList
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import org.litote.kmongo.coroutine.CoroutineCollection
-import org.litote.kmongo.coroutine.CoroutineFindPublisher
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.coroutine.FindFlow
 import org.bson.conversions.Bson
 import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.domain.server.*
@@ -20,8 +21,8 @@ class ServersServiceTest {
         val attr1 = Attributes(id = "a1", name = "Cool Server")
         val server1 = BattlemetricsServerContent(attributes = attr1, id = "1")
 
-        val publisher = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val publisher = mockk<FindFlow<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
         every { collection.find(any<Bson>()) } returns publisher
         every { publisher.sort(any<Bson>()) } returns publisher
         every { publisher.skip(any()) } returns publisher
@@ -42,8 +43,8 @@ class ServersServiceTest {
         val attr = Attributes(id = "a1", name = "Region Server")
         val server = BattlemetricsServerContent(attributes = attr, id = "1")
 
-        val publisher = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val publisher = mockk<FindFlow<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
         val slotFind = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns publisher
         every { publisher.sort(any<Bson>()) } returns publisher
@@ -68,8 +69,8 @@ class ServersServiceTest {
         val attr = Attributes(id = "a2", name = "Difficulty Server")
         val server = BattlemetricsServerContent(attributes = attr, id = "2")
 
-        val publisher = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val publisher = mockk<FindFlow<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
         val slotFind = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns publisher
         every { publisher.sort(any<Bson>()) } returns publisher
@@ -94,8 +95,8 @@ class ServersServiceTest {
         val attr = Attributes(id = "a3", name = "Ranking Server")
         val server = BattlemetricsServerContent(attributes = attr, id = "3")
 
-        val publisher = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val publisher = mockk<FindFlow<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
         val slotFind = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns publisher
         every { publisher.sort(any<Bson>()) } returns publisher
@@ -122,8 +123,8 @@ class ServersServiceTest {
         val attr = Attributes(id = "a4", name = "Modded Official Server")
         val server = BattlemetricsServerContent(attributes = attr, id = "4")
 
-        val publisher = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val publisher = mockk<FindFlow<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
         val slotFind = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns publisher
         every { publisher.sort(any<Bson>()) } returns publisher
@@ -149,8 +150,8 @@ class ServersServiceTest {
         val attr = Attributes(id = "a5", name = "Fav Server")
         val server = BattlemetricsServerContent(attributes = attr, id = "5")
 
-        val publisher = mockk<CoroutineFindPublisher<BattlemetricsServerContent>>()
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val publisher = mockk<FindFlow<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
         every { collection.find(any<Bson>()) } returns publisher
         every { publisher.sort(any<Bson>()) } returns publisher
         every { publisher.skip(any()) } returns publisher
