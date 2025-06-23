@@ -16,13 +16,14 @@ import kotlin.test.assertEquals
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Duration.Companion.days
 import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.DeleteOptions
 import com.mongodb.client.model.ReplaceOneModel
 import org.bson.conversions.Bson
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import com.mongodb.kotlin.client.coroutine.FindFlow
-import kotlinx.coroutines.flow.toList
+import pl.cuyer.thedome.util.SimpleFindPublisher
 import pl.cuyer.thedome.domain.battlemetrics.*
 
 class ServerFetchServiceTest {
@@ -43,10 +44,8 @@ class ServerFetchServiceTest {
         }
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
 
-        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
-        val findPub = mockk<FindFlow<BattlemetricsServerContent>>()
-        every { collection.find(any<Bson>()) } returns findPub
-        coEvery { findPub.toList() } returns emptyList()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(emptyList()))
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
         val slotFilter = slot<Bson>()
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
@@ -63,13 +62,13 @@ class ServerFetchServiceTest {
 
     @Test
     fun `fetchServers only updates newer data`() = runBlocking {
-        val year = Clock.System.now().toLocalDateTime(TimeZone.UTC).year
+        val now = Clock.System.now()
         val new1 = BattlemetricsServerContent(
-            attributes = Attributes(id = "a1", updatedAt = "${year}-01-02T00:00:00Z"),
+            attributes = Attributes(id = "a1", updatedAt = (now - 1.days).toString()),
             id = "1"
         )
         val new2 = BattlemetricsServerContent(
-            attributes = Attributes(id = "a2", updatedAt = "${year}-01-01T00:00:00Z"),
+            attributes = Attributes(id = "a2", updatedAt = (now - 2.days).toString()),
             id = "2"
         )
         val page = BattlemetricsPage(data = listOf(new1, new2), links = Links(null))
@@ -83,18 +82,16 @@ class ServerFetchServiceTest {
         }
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
 
-        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
-        val findPub = mockk<FindFlow<BattlemetricsServerContent>>()
-        every { collection.find(any<Bson>()) } returns findPub
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
         val existing1 = BattlemetricsServerContent(
-            attributes = Attributes(id = "a1", updatedAt = "${year}-01-01T00:00:00Z"),
+            attributes = Attributes(id = "a1", updatedAt = (now - 2.days).toString()),
             id = "1"
         )
         val existing2 = BattlemetricsServerContent(
-            attributes = Attributes(id = "a2", updatedAt = "${year}-01-02T00:00:00Z"),
+            attributes = Attributes(id = "a2", updatedAt = (now - 1.days).toString()),
             id = "2"
         )
-        coEvery { findPub.toList() } returns listOf(existing1, existing2)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(existing1, existing2)))
 
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
@@ -109,14 +106,13 @@ class ServerFetchServiceTest {
 
     @Test
     fun `fetchServers filters outdated servers`() = runBlocking {
-        val year = Clock.System.now().toLocalDateTime(TimeZone.UTC).year
-        val oldYear = year - 1
+        val now = Clock.System.now()
         val recent = BattlemetricsServerContent(
-            attributes = Attributes(id = "a1", updatedAt = "${year}-01-01T00:00:00Z"),
+            attributes = Attributes(id = "a1", updatedAt = (now - 1.days).toString()),
             id = "1"
         )
         val outdated = BattlemetricsServerContent(
-            attributes = Attributes(id = "a2", updatedAt = "${oldYear}-12-31T23:59:59Z"),
+            attributes = Attributes(id = "a2", updatedAt = (now - 61.days).toString()),
             id = "2"
         )
         val page = BattlemetricsPage(data = listOf(recent, outdated), links = Links(null))
@@ -130,10 +126,8 @@ class ServerFetchServiceTest {
         }
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
 
-        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
-        val findPub = mockk<FindFlow<BattlemetricsServerContent>>()
-        every { collection.find(any<Bson>()) } returns findPub
-        coEvery { findPub.toList() } returns emptyList()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(emptyList()))
 
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()

@@ -1,11 +1,8 @@
 package pl.cuyer.thedome.services
 
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.toList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.bson.BsonDocument
@@ -27,6 +24,7 @@ import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.domain.rust.Wipe
 import pl.cuyer.thedome.domain.rust.RustSettings
 import pl.cuyer.thedome.domain.server.*
+import pl.cuyer.thedome.util.SimpleFindPublisher
 
 class FiltersServiceTest {
     @Test
@@ -60,58 +58,57 @@ class FiltersServiceTest {
             AggregateFlow(SimpleAggregatePublisher(difficultyDocs))
         )
 
-        val pubRanking = mockk<FindFlow<BattlemetricsServerContent>>()
-        val pubPlayers = mockk<FindFlow<BattlemetricsServerContent>>()
-        val pubGroup = mockk<FindFlow<BattlemetricsServerContent>>()
-        val pubWipes = mockk<FindFlow<BattlemetricsServerContent>>()
-        every { collection.find() } returnsMany listOf(pubRanking, pubPlayers, pubGroup, pubWipes)
-
-        every { pubRanking.sort(any<Bson>()) } returns pubRanking
-        every { pubRanking.limit(any()) } returns pubRanking
-        coEvery { pubRanking.first() } returns BattlemetricsServerContent(
-            attributes = Attributes(id = "r1", rank = 5), id = "1"
-        )
-
-        every { pubPlayers.sort(any<Bson>()) } returns pubPlayers
-        every { pubPlayers.limit(any()) } returns pubPlayers
-        coEvery { pubPlayers.first() } returns BattlemetricsServerContent(
-            attributes = Attributes(id = "p1", players = 20), id = "2"
-        )
-
-        every { pubGroup.sort(any<Bson>()) } returns pubGroup
-        every { pubGroup.limit(any()) } returns pubGroup
-        coEvery { pubGroup.first() } returns BattlemetricsServerContent(
-            attributes = Attributes(
-                id = "g1",
-                details = Details(rustSettings = RustSettings(groupLimit = 8))
-            ),
-            id = "3"
-        )
-
-        every { pubWipes.projection(any<Bson>()) } returns pubWipes
-        coEvery { pubWipes.toList() } returns listOf(
-            BattlemetricsServerContent(
-                attributes = Attributes(
-                    id = "w1",
-                    details = Details(rustSettings = RustSettings(wipes = listOf(Wipe(weeks = listOf(1)))))
-                ),
-                id = "4"
-            ),
-            BattlemetricsServerContent(
-                attributes = Attributes(
-                    id = "w2",
-                    details = Details(rustSettings = RustSettings(wipes = listOf(Wipe(weeks = listOf(1,1,1,1,1)))))
-                ),
-                id = "5"
-            ),
-            BattlemetricsServerContent(
-                attributes = Attributes(
-                    id = "w3",
-                    details = Details(rustSettings = RustSettings(wipes = List(4) { Wipe(weeks = listOf(1,0,1,0)) }))
-                ),
-                id = "6"
+        val pubRanking = FindFlow(
+            SimpleFindPublisher(
+                listOf(BattlemetricsServerContent(attributes = Attributes(id = "r1", rank = 5), id = "1"))
             )
         )
+        val pubPlayers = FindFlow(
+            SimpleFindPublisher(
+                listOf(BattlemetricsServerContent(attributes = Attributes(id = "p1", players = 20), id = "2"))
+            )
+        )
+        val pubGroup = FindFlow(
+            SimpleFindPublisher(
+                listOf(
+                    BattlemetricsServerContent(
+                        attributes = Attributes(
+                            id = "g1",
+                            details = Details(rustSettings = RustSettings(groupLimit = 8))
+                        ),
+                        id = "3"
+                    )
+                )
+            )
+        )
+        val pubWipes = FindFlow(
+            SimpleFindPublisher(
+                listOf(
+                    BattlemetricsServerContent(
+                        attributes = Attributes(
+                            id = "w1",
+                            details = Details(rustSettings = RustSettings(wipes = listOf(Wipe(weeks = listOf(1)))))
+                        ),
+                        id = "4"
+                    ),
+                    BattlemetricsServerContent(
+                        attributes = Attributes(
+                            id = "w2",
+                            details = Details(rustSettings = RustSettings(wipes = listOf(Wipe(weeks = listOf(1,1,1,1,1)))))
+                        ),
+                        id = "5"
+                    ),
+                    BattlemetricsServerContent(
+                        attributes = Attributes(
+                            id = "w3",
+                            details = Details(rustSettings = RustSettings(wipes = List(4) { Wipe(weeks = listOf(1,0,1,0)) }))
+                        ),
+                        id = "6"
+                    )
+                )
+            )
+        )
+        every { collection.find() } returnsMany listOf(pubRanking, pubPlayers, pubGroup, pubWipes)
 
         val service = FiltersService(collection)
         val options = service.getOptions()
