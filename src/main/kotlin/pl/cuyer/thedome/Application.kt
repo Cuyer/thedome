@@ -1,7 +1,6 @@
 package pl.cuyer.thedome
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
-import com.mongodb.reactivestreams.client.MongoClient as ReactiveMongoClient
 import dev.inmo.krontab.builder.SchedulerBuilder
 import dev.inmo.krontab.builder.TimeBuilder
 import io.github.flaxoos.ktor.server.plugins.taskscheduling.TaskScheduling
@@ -183,8 +182,7 @@ fun Application.module() {
     }
 
     val fetchService by inject<ServerFetchService>()
-    val reactiveMongoClient by inject<ReactiveMongoClient>()
-    val schedulerClient = MongoClient(reactiveMongoClient)
+    val schedulerClient by inject<MongoClient>()
     logger.info("Scheduling fetch task with cron expression '${config.fetchCron}'")
 
     install(TaskScheduling) {
