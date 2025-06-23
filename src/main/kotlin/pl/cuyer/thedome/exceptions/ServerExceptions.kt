@@ -5,3 +5,5 @@ class ServersQueryException : ServersException("Unable to query servers")
 
 open class FiltersException(message: String) : RuntimeException(message)
 class FiltersOptionsException : FiltersException("Unable to fetch filter options")
+
+class FavoriteLimitException : ServersException("Favorite limit reached")

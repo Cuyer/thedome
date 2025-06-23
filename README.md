@@ -25,6 +25,7 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 - `ALLOWED_ORIGINS` – comma-separated list of allowed CORS origins (useful in production)
 - `ANON_RATE_LIMIT` – requests per minute allowed for anonymous users (default `60`)
 - `ANON_REFILL_PERIOD` – seconds per anonymous rate limit window (default `60`)
+- `FAVORITES_LIMIT` – maximum number of favourite servers per user (default `10`)
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional filtering. Alongside pagination (`page` and `size`),
@@ -103,9 +104,21 @@ The response includes the requested page of servers and pagination fields:
 ```
 
 Each server in the `servers` array exposes various attributes collected from
-Battlemetrics. Recent additions include `average_fps`, `pve`, `website`, and
-`is_premium` which indicate the average frames per second, PvE status, server
-homepage, and premium status respectively.
+Battlemetrics. Recent additions include `average_fps`, `pve`, `website`,
+`is_premium`, and `is_favorite` which indicate the average frames per
+second, PvE status, server homepage, premium status, and whether the
+server is one of your favourites.
+
+## Favorites
+
+Authenticated users can manage a list of favourite servers. The number of
+favourites is limited by the `FAVORITES_LIMIT` setting.
+
+```
+GET    /favorites            # list favourite servers (paged)
+POST   /favorites/{id}       # add server to favourites
+DELETE /favorites/{id}       # remove server from favourites
+```
 
 ## Docker
 

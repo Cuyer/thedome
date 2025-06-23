@@ -54,5 +54,7 @@ data class ServerInfo(
     val pve: Boolean? = null,
     val website: String? = null,
     @SerialName("is_premium")
-    val isPremium: Boolean? = null
+    val isPremium: Boolean? = null,
+    @SerialName("is_favorite")
+    val isFavorite: Boolean = false
 )

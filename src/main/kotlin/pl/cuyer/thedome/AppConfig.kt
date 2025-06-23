@@ -12,7 +12,8 @@ data class AppConfig(
     val mongoUri: String,
     val apiKey: String,
     val anonRateLimit: Int,
-    val anonRefillPeriod: Int
+    val anonRefillPeriod: Int,
+    val favoritesLimit: Int
 ) {
     companion object {
         fun load(config: ApplicationConfig): AppConfig {
@@ -28,6 +29,7 @@ data class AppConfig(
             val apiKey = section.propertyOrNull("apiKey")?.getString() ?: ""
             val anonRateLimit = section.propertyOrNull("anonRateLimit")?.getString()?.toIntOrNull() ?: 60
             val anonRefillPeriod = section.propertyOrNull("anonRefillPeriod")?.getString()?.toIntOrNull() ?: 60
+            val favoritesLimit = section.propertyOrNull("favoritesLimit")?.getString()?.toIntOrNull() ?: 10
             return AppConfig(
                 allowedOrigins,
                 jwtAudience,
@@ -38,7 +40,8 @@ data class AppConfig(
                 mongoUri,
                 apiKey,
                 anonRateLimit,
-                anonRefillPeriod
+                anonRefillPeriod,
+                favoritesLimit
             )
         }
     }
