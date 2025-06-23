@@ -94,7 +94,7 @@ class ServerFetchService(
             val idsToKeep = servers.map { it.id }
             collection.deleteMany(Filters.nin("id", idsToKeep))
 
-            logger.info("Upserted ${servers.size} servers and removed stale entries.")
+            logger.info("Upserted ${idsToKeep.size} servers and removed stale entries.")
 
         } catch (e: Exception) {
             logger.error("Failed to fetch or update servers: ${e.message}", e)
