@@ -14,11 +14,8 @@ import io.mockk.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration.Companion.days
 import com.mongodb.client.model.BulkWriteOptions
-import com.mongodb.client.model.DeleteOptions
 import com.mongodb.client.model.ReplaceOneModel
 import org.bson.conversions.Bson
 import com.mongodb.kotlin.client.coroutine.MongoCollection
@@ -30,7 +27,7 @@ class ServerFetchServiceTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
-    fun `fetchServers upserts and removes`() = runBlocking {
+    fun `fetchServers upserts`() = runBlocking {
         val server1 = BattlemetricsServerContent(attributes = Attributes(id = "a1"), id = "1")
         val server2 = BattlemetricsServerContent(attributes = Attributes(id = "a2"), id = "2")
         val page = BattlemetricsPage(data = listOf(server1, server2), links = Links(null))
@@ -47,9 +44,7 @@ class ServerFetchServiceTest {
         val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
         every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(emptyList()))
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
-        val slotFilter = slot<Bson>()
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
-        coEvery { collection.deleteMany(capture(slotFilter), any<DeleteOptions>()) } returns mockk()
 
         val service = ServerFetchService(client, collection, "")
         service.fetchServers()
@@ -57,7 +52,7 @@ class ServerFetchServiceTest {
         assertEquals(2, slotOps.captured.size)
         val ids = slotOps.captured.map { it.replacement.id }.toSet()
         assertEquals(setOf("1", "2"), ids)
-        coVerify(exactly = 1) { collection.deleteMany(any<Bson>(), any<DeleteOptions>()) }
+        coVerify(exactly = 0) { collection.deleteMany(any<Bson>(), any()) }
     }
 
     @Test
@@ -95,17 +90,17 @@ class ServerFetchServiceTest {
 
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
-        coEvery { collection.deleteMany(any<Bson>(), any<DeleteOptions>()) } returns mockk()
 
         val service = ServerFetchService(client, collection, "")
         service.fetchServers()
 
         assertEquals(1, slotOps.captured.size)
         assertEquals("1", slotOps.captured.first().replacement.id)
+        coVerify(exactly = 0) { collection.deleteMany(any<Bson>(), any()) }
     }
 
     @Test
-    fun `fetchServers filters outdated servers`() = runBlocking {
+    fun `fetchServers includes outdated servers`() = runBlocking {
         val now = Clock.System.now()
         val recent = BattlemetricsServerContent(
             attributes = Attributes(id = "a1", updatedAt = (now - 1.days).toString()),
@@ -131,12 +126,13 @@ class ServerFetchServiceTest {
 
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
-        coEvery { collection.deleteMany(any<Bson>(), any<DeleteOptions>()) } returns mockk()
 
         val service = ServerFetchService(client, collection, "")
         service.fetchServers()
 
-        assertEquals(1, slotOps.captured.size)
-        assertEquals("1", slotOps.captured.first().replacement.id)
+        assertEquals(2, slotOps.captured.size)
+        val ids = slotOps.captured.map { it.replacement.id }.toSet()
+        assertEquals(setOf("1", "2"), ids)
+        coVerify(exactly = 0) { collection.deleteMany(any<Bson>(), any()) }
     }
 }

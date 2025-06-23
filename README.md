@@ -16,6 +16,7 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 
 - `MONGODB_URI` – MongoDB connection string
 - `FETCH_CRON` – cron expression for server fetch schedule (defaults to every 10 minutes; uses seconds as the first field)
+- `CLEANUP_CRON` – cron expression for removing outdated servers (defaults to daily at midnight)
 - `API_KEY` – optional RustMaps API key
 - `PORT` – overrides the default port if implemented
 - `JWT_SECRET` – HMAC secret for signing tokens (**required**; the application fails if missing)
@@ -147,6 +148,7 @@ You can run the project and its MongoDB dependency using Docker Compose. The pro
 ### Environment Variables
 - `MONGODB_URI` – MongoDB connection string (defaults to `mongodb://mongo:27017/thedome` for the container)
 - `FETCH_CRON` – cron expression for server fetch schedule (optional)
+- `CLEANUP_CRON` – cron expression for server cleanup schedule (optional)
 - `API_KEY` – optional RustMaps API key (optional)
 - `PORT` – application port (defaults to `8080`)
 
@@ -182,7 +184,7 @@ You can run the backend and MongoDB together using Docker Compose. The setup use
 - MongoDB exposes port `27017` (mapped to host `27017`).
 - MongoDB data is persisted in the `mongo-data` Docker volume.
 - The default MongoDB URI inside the container is `mongodb://mongo:27017/thedome`.
-- You can override environment variables such as `MONGODB_URI`, `FETCH_CRON`, `API_KEY`, and `PORT` in the `compose.yaml` or via an `.env` file.
+- You can override environment variables such as `MONGODB_URI`, `FETCH_CRON`, `CLEANUP_CRON`, `API_KEY`, and `PORT` in the `compose.yaml` or via an `.env` file.
 
 To start everything:
 

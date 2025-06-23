@@ -9,6 +9,7 @@ data class AppConfig(
     val jwtRealm: String,
     val jwtSecret: String,
     val fetchCron: String,
+    val cleanupCron: String,
     val mongoUri: String,
     val apiKey: String,
     val anonRateLimit: Int,
@@ -25,6 +26,7 @@ data class AppConfig(
             val jwtIssuer = jwtSection.propertyOrNull("issuer")?.getString() ?: "thedomeIssuer"
             val jwtRealm = jwtSection.propertyOrNull("realm")?.getString() ?: "thedomeRealm"
             val fetchCron = section.propertyOrNull("fetchCron")?.getString() ?: "0 */10 * * *"
+            val cleanupCron = section.propertyOrNull("cleanupCron")?.getString() ?: "0 0 * * *"
             val mongoUri = section.propertyOrNull("mongoUri")?.getString() ?: "mongodb://localhost:27017"
             val apiKey = section.propertyOrNull("apiKey")?.getString() ?: ""
             val anonRateLimit = section.propertyOrNull("anonRateLimit")?.getString()?.toIntOrNull() ?: 60
@@ -37,6 +39,7 @@ data class AppConfig(
                 jwtRealm,
                 jwtSecret,
                 fetchCron,
+                cleanupCron,
                 mongoUri,
                 apiKey,
                 anonRateLimit,

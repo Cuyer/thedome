@@ -4,15 +4,11 @@ import com.mongodb.client.model.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import korlibs.time.fromDays
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Duration.Companion.days    // 🟢 bring in the “60.days” syntax
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
@@ -59,14 +55,7 @@ class ServerFetchService(
                         }
                     }.awaitAll()
                 }
-                val cutoff: Instant = Clock.System.now() - Duration.fromDays(60)
-
-                val filteredServers = pageServers.filter { server ->
-                    val updatedInstant = server.attributes.updatedAt
-                        ?.let { runCatching { Instant.parse(it) }.getOrNull() }
-                    updatedInstant == null || updatedInstant >= cutoff
-                }
-                servers += filteredServers
+                servers += pageServers
 
                 url = page.links?.next
             }
@@ -105,10 +94,7 @@ class ServerFetchService(
                 collection.bulkWrite(replaceOperations, BulkWriteOptions().ordered(false))
             }
 
-            val idsToKeep = servers.map { it.id }
-            collection.deleteMany(Filters.nin("id", idsToKeep))
-
-            logger.info("Upserted ${idsToKeep.size} servers and removed stale entries.")
+            logger.info("Upserted ${replaceOperations.size} servers")
 
         } catch (e: Exception) {
             logger.error("Failed to fetch or update servers: ${e.message}", e)
