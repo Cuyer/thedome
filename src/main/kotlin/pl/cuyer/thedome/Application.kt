@@ -219,7 +219,7 @@ fun Application.module() {
     val filtersService by inject<FiltersService>()
     val authService by inject<AuthService>()
     val favoritesService by inject<FavoritesService>()
-    val serversEndpoint = ServersEndpoint(serversService)
+    val serversEndpoint = ServersEndpoint(serversService, favoritesService)
     val filtersEndpoint = FiltersEndpoint(filtersService)
     val authEndpoint = AuthEndpoint(authService)
     val favoritesEndpoint = FavoritesEndpoint(favoritesService)

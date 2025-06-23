@@ -8,14 +8,19 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import pl.cuyer.thedome.resources.Servers
 import pl.cuyer.thedome.services.ServersService
+import pl.cuyer.thedome.services.FavoritesService
 import pl.cuyer.thedome.exceptions.ServersQueryException
 
-class ServersEndpoint(private val service: ServersService) {
+class ServersEndpoint(
+    private val service: ServersService,
+    private val favoritesService: FavoritesService
+) {
     fun register(route: Route) {
         with(route) {
             get<Servers> { params ->
                 val principal = call.principal<JWTPrincipal>()
-                val favorites = principal?.getClaim("favorites", Array<String>::class)?.toList()
+                val username = principal?.getClaim("username", String::class)
+                val favorites = username?.let { favoritesService.getFavoriteIds(it) }
                 val response = try {
                     service.getServers(params, favorites)
                 } catch (e: Exception) {

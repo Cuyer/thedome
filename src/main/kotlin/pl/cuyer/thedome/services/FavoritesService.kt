@@ -16,6 +16,10 @@ class FavoritesService(
     private val servers: CoroutineCollection<BattlemetricsServerContent>,
     private val limit: Int
 ) {
+    suspend fun getFavoriteIds(username: String): List<String> {
+        val user = users.findOne(User::username eq username)
+        return user?.favorites ?: emptyList()
+    }
     suspend fun addFavorite(username: String, serverId: String): Boolean {
         val user = users.findOne(User::username eq username) ?: return false
         if (user.favorites.contains(serverId)) return true

@@ -93,8 +93,7 @@ class AuthService(
             .withAudience(jwtAudience)
             .withIssuer(jwtIssuer)
             .withClaim("username", user.username)
-            .withClaim("subscriber", user.subscriber)
-            .withArrayClaim("favorites", user.favorites.toTypedArray())
+            .withClaim("email", user.email)
             .withExpiresAt(Date(System.currentTimeMillis() + 3600_000))
             .sign(algorithm)
     }
