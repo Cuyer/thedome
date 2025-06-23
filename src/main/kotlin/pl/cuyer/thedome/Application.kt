@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.resources.Servers
 import pl.cuyer.thedome.services.ServerFetchService
+import pl.cuyer.thedome.services.ServerCleanupService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
@@ -182,8 +183,10 @@ fun Application.module() {
     }
 
     val fetchService by inject<ServerFetchService>()
+    val cleanupService by inject<ServerCleanupService>()
     val schedulerClient by inject<MongoClient>()
     logger.info("Scheduling fetch task with cron expression '${config.fetchCron}'")
+    logger.info("Scheduling cleanup task with cron expression '${config.cleanupCron}'")
 
     install(TaskScheduling) {
         mongoDb {
@@ -194,6 +197,11 @@ fun Application.module() {
             name = "fetch-servers"
             kronSchedule = { applyCron(config.fetchCron) }
             task = { fetchService.fetchServers() }
+        }
+        task {
+            name = "cleanup-servers"
+            kronSchedule = { applyCron(config.cleanupCron) }
+            task = { cleanupService.cleanupOldServers() }
         }
     }
 

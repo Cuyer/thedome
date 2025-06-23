@@ -21,6 +21,7 @@ import org.koin.core.qualifier.named
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.services.ServerFetchService
+import pl.cuyer.thedome.services.ServerCleanupService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
@@ -85,6 +86,7 @@ fun appModule(config: AppConfig) = module {
     }
 
     single { ServerFetchService(get(), get(named("servers")), config.apiKey) }
+    single { ServerCleanupService(get(named("servers"))) }
     single { ServersService(get(named("servers"))) }
     single { FiltersService(get(named("servers"))) }
     single { AuthService(get(named("users")), config.jwtSecret, config.jwtIssuer, config.jwtAudience) }
