@@ -4,19 +4,22 @@ import com.mongodb.client.model.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import korlibs.time.fromDays
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.datetime.Instant
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Duration.Companion.days    // 🟢 bring in the “60.days” syntax
 import org.litote.kmongo.coroutine.CoroutineCollection
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsPage
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.battlemetrics.extractMapId
 import pl.cuyer.thedome.domain.battlemetrics.fetchMapIcon
+import kotlin.time.Duration
 
 class ServerFetchService(
     private val client: HttpClient,
@@ -55,13 +58,12 @@ class ServerFetchService(
                         }
                     }.awaitAll()
                 }
-                val currentYear = Clock.System.now().toLocalDateTime(TimeZone.UTC).year
+                val cutoff: Instant = Clock.System.now() - Duration.fromDays(60)
+
                 val filteredServers = pageServers.filter { server ->
-                    val year = server.attributes.updatedAt
+                    val updatedInstant = server.attributes.updatedAt
                         ?.let { runCatching { Instant.parse(it) }.getOrNull() }
-                        ?.toLocalDateTime(TimeZone.UTC)
-                        ?.year
-                    year == null || year >= currentYear
+                    updatedInstant == null || updatedInstant >= cutoff
                 }
                 servers += filteredServers
 
