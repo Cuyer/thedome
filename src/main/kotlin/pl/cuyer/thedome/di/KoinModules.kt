@@ -11,8 +11,6 @@ import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.reactivestreams.KMongo
 import org.litote.kmongo.coroutine.coroutine
-import com.mongodb.client.model.IndexOptions
-import org.bson.Document
 import org.koin.dsl.module
 import org.koin.core.qualifier.named
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
@@ -59,9 +57,7 @@ fun appModule(config: AppConfig) = module {
         val collection = get<CoroutineDatabase>().getCollection<User>("users")
         runBlocking {
             collection.ensureUniqueIndex(User::username)
-            val partial = Document("email", Document("\$exists", true).append("\$ne", null))
-            val options = IndexOptions().unique(true).partialFilterExpression(partial)
-            collection.createIndex(Document("email", 1), options)
+            val partial = Document("email", Document("\$type", "string"))
         }
         collection
     }
