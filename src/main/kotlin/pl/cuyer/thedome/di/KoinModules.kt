@@ -11,6 +11,7 @@ import org.litote.kmongo.coroutine.CoroutineCollection
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.reactivestreams.KMongo
 import org.litote.kmongo.coroutine.coroutine
+import com.mongodb.reactivestreams.client.MongoClient as ReactiveMongoClient
 import com.mongodb.client.model.IndexOptions
 import org.bson.Document
 import org.koin.dsl.module
@@ -32,9 +33,11 @@ fun appModule(config: AppConfig) = module {
         }
     }
 
-    single<CoroutineClient> {
-        KMongo.createClient(config.mongoUri).coroutine
+    single<ReactiveMongoClient> {
+        KMongo.createClient(config.mongoUri)
     }
+
+    single<CoroutineClient> { get<ReactiveMongoClient>().coroutine }
 
     single<CoroutineDatabase> { get<CoroutineClient>().getDatabase("thedome") }
 
