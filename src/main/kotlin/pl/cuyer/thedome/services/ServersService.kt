@@ -3,7 +3,8 @@ package pl.cuyer.thedome.services
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Sorts
 import org.bson.conversions.Bson
-import org.litote.kmongo.coroutine.CoroutineCollection
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import kotlinx.coroutines.flow.toList
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
 import pl.cuyer.thedome.domain.server.Order
@@ -14,7 +15,7 @@ import java.util.regex.Pattern
 import org.slf4j.LoggerFactory
 
 class ServersService(
-    private val collection: CoroutineCollection<BattlemetricsServerContent>
+    private val collection: MongoCollection<BattlemetricsServerContent>
 ) {
     private val logger = LoggerFactory.getLogger(ServersService::class.java)
     suspend fun getServers(params: Servers, favorites: List<String>? = null): ServersResponse {

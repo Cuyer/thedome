@@ -2,41 +2,43 @@ package pl.cuyer.thedome.services
 
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Sorts
-import org.litote.kmongo.coroutine.CoroutineCollection
-import org.litote.kmongo.eq
-import org.litote.kmongo.push
-import org.litote.kmongo.pull
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.model.Filters.eq
+import com.mongodb.kotlin.client.model.Updates.push
+import com.mongodb.kotlin.client.model.Updates.pull
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toList
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
 import pl.cuyer.thedome.domain.server.ServersResponse
 
 class FavoritesService(
-    private val users: CoroutineCollection<User>,
-    private val servers: CoroutineCollection<BattlemetricsServerContent>,
+    private val users: MongoCollection<User>,
+    private val servers: MongoCollection<BattlemetricsServerContent>,
     private val limit: Int
 ) {
     suspend fun getFavoriteIds(username: String): List<String> {
-        val user = users.findOne(User::username eq username)
+        val user = users.find(eq(User::username, username)).firstOrNull()
         return user?.favorites ?: emptyList()
     }
     suspend fun addFavorite(username: String, serverId: String): Boolean {
-        val user = users.findOne(User::username eq username) ?: return false
+        val user = users.find(eq(User::username, username)).firstOrNull() ?: return false
         if (user.favorites.contains(serverId)) return true
         if (!user.subscriber && user.favorites.size >= limit) return false
-        users.updateOne(User::username eq username, push(User::favorites, serverId))
+        users.updateOne(eq(User::username, username), push(User::favorites, serverId))
         return true
     }
 
     suspend fun removeFavorite(username: String, serverId: String): Boolean {
-        val user = users.findOne(User::username eq username) ?: return false
+        val user = users.find(eq(User::username, username)).firstOrNull() ?: return false
         if (!user.favorites.contains(serverId)) return false
-        users.updateOne(User::username eq username, pull(User::favorites, serverId))
+        users.updateOne(eq(User::username, username), pull(User::favorites, serverId))
         return true
     }
 
     suspend fun getFavorites(username: String, page: Int, size: Int): ServersResponse {
-        val user = users.findOne(User::username eq username)
+        val user = users.find(eq(User::username, username)).firstOrNull()
         val favorites = user?.favorites ?: emptyList()
         val skip = (page - 1) * size
         val query = if (favorites.isEmpty()) {

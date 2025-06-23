@@ -6,13 +6,15 @@ import com.mongodb.client.model.Projections
 import com.mongodb.client.model.Sorts
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
 import org.bson.BsonDocument
-import org.litote.kmongo.coroutine.CoroutineCollection
+import com.mongodb.kotlin.client.coroutine.MongoCollection
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.server.*
 import org.slf4j.LoggerFactory
 
-class FiltersService(private val collection: CoroutineCollection<BattlemetricsServerContent>) {
+class FiltersService(private val collection: MongoCollection<BattlemetricsServerContent>) {
     private val logger = LoggerFactory.getLogger(FiltersService::class.java)
     suspend fun getOptions(): FiltersOptions = coroutineScope {
         logger.info("Fetching filters options")

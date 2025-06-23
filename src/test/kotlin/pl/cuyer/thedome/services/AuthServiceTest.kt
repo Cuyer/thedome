@@ -4,10 +4,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.firstOrNull
 import kotlin.test.Test
 import kotlin.test.assertTrue
-import org.litote.kmongo.coroutine.CoroutineCollection
-import org.litote.kmongo.eq
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.model.Filters.eq
 import org.bson.conversions.Bson
 import pl.cuyer.thedome.domain.auth.User
 import com.mongodb.client.model.InsertOneOptions
@@ -23,7 +24,7 @@ class AuthServiceTest {
     }
     @Test
     fun `registerAnonymous stores user`() = runBlocking {
-        val collection = mockk<CoroutineCollection<User>>()
+        val collection = mockk<MongoCollection<User>>()
         coEvery { collection.insertOne(any(), any<InsertOneOptions>()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
@@ -35,11 +36,11 @@ class AuthServiceTest {
     }
     @Test
     fun `upgradeAnonymous converts user`() = runBlocking {
-        val collection = mockk<CoroutineCollection<User>>()
+        val collection = mockk<MongoCollection<User>>()
         val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null, favorites = emptyList())
         val updated = anon.copy(username = "newuser")
-        coEvery { collection.findOne(any<Bson>()) } returnsMany listOf(anon, null, updated)
-        coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
+        coEvery { collection.find(any<Bson>()).firstOrNull() } returnsMany listOf(anon, null, updated)
+        coEvery { collection.updateOne(any<Bson>(), any<Bson>()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
         val result = service.upgradeAnonymous("anon-123", "newuser", "pass")
@@ -50,12 +51,12 @@ class AuthServiceTest {
 
     @Test
     fun `login hashes refresh token`() = runBlocking {
-        val collection = mockk<CoroutineCollection<User>>()
+        val collection = mockk<MongoCollection<User>>()
         val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
         val user = User(username = "user", email = "user@example.com", passwordHash = passwordHash, favorites = emptyList())
         val slotUpdate = slot<Bson>()
-        coEvery { collection.findOne(any<Bson>()) } returns user
-        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
+        coEvery { collection.find(any<Bson>()).firstOrNull() } returns user
+        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate)) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
         val result = service.login("user", "pass")
@@ -69,14 +70,14 @@ class AuthServiceTest {
 
     @Test
     fun `refresh compares hashed token`() = runBlocking {
-        val collection = mockk<CoroutineCollection<User>>()
+        val collection = mockk<MongoCollection<User>>()
         val oldToken = "old-token"
         val oldHash = hash(oldToken)
         val user = User(username = "user", email = "user@example.com", passwordHash = "", refreshToken = oldHash, favorites = emptyList())
         val slotFind = slot<Bson>()
         val slotUpdate = slot<Bson>()
-        coEvery { collection.findOne(capture(slotFind)) } returns user
-        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
+        coEvery { collection.find(capture(slotFind)).firstOrNull() } returns user
+        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate)) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience")
 
         val result = service.refresh(oldToken)

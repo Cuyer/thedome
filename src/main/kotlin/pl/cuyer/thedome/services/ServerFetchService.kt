@@ -13,7 +13,8 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration.Companion.days    // 🟢 bring in the “60.days” syntax
-import org.litote.kmongo.coroutine.CoroutineCollection
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsPage
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
@@ -23,7 +24,7 @@ import kotlin.time.Duration
 
 class ServerFetchService(
     private val client: HttpClient,
-    private val collection: CoroutineCollection<BattlemetricsServerContent>,
+    private val collection: MongoCollection<BattlemetricsServerContent>,
     private val apiKey: String
 ) {
     private val logger = LoggerFactory.getLogger(ServerFetchService::class.java)

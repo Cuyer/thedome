@@ -6,12 +6,14 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientCon
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import org.litote.kmongo.coroutine.CoroutineClient
-import org.litote.kmongo.coroutine.CoroutineCollection
-import org.litote.kmongo.coroutine.CoroutineDatabase
-import org.litote.kmongo.reactivestreams.KMongo
-import org.litote.kmongo.coroutine.coroutine
-import com.mongodb.reactivestreams.client.MongoClient as ReactiveMongoClient
+import com.mongodb.ConnectionString
+import com.mongodb.MongoClientSettings
+import com.mongodb.kotlin.client.coroutine.MongoClient
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
+import org.bson.codecs.configuration.CodecRegistries.fromProviders
+import org.bson.codecs.configuration.CodecRegistries.fromRegistries
+import org.bson.codecs.kotlinx.KotlinSerializerCodecProvider
 import com.mongodb.client.model.IndexOptions
 import org.bson.Document
 import org.koin.dsl.module
@@ -34,35 +36,44 @@ fun appModule(config: AppConfig) = module {
         }
     }
 
-    single<ReactiveMongoClient> {
-        KMongo.createClient(config.mongoUri)
+    single<MongoClient> {
+        val registry = fromRegistries(
+            MongoClientSettings.getDefaultCodecRegistry(),
+            fromProviders(KotlinSerializerCodecProvider())
+        )
+        val settings = MongoClientSettings.builder()
+            .applyConnectionString(ConnectionString(config.mongoUri))
+            .codecRegistry(registry)
+            .build()
+        MongoClient.Factory.create(settings)
     }
 
-    single<CoroutineClient> { get<ReactiveMongoClient>().coroutine }
+    single<MongoDatabase> { get<MongoClient>().getDatabase("thedome") }
 
-    single<CoroutineDatabase> { get<CoroutineClient>().getDatabase("thedome") }
-
-    single<CoroutineCollection<BattlemetricsServerContent>>(named("servers")) {
-        val collection = get<CoroutineDatabase>().getCollection<BattlemetricsServerContent>("servers")
+    single<MongoCollection<BattlemetricsServerContent>>(named("servers")) {
+        val collection = get<MongoDatabase>().getCollection<BattlemetricsServerContent>("servers")
         runBlocking {
-            collection.createIndex("{ 'attributes.rank': 1 }")
-            collection.createIndex("{ 'attributes.country': 1 }")
-            collection.createIndex("{ 'attributes.players': 1 }")
-            collection.createIndex("{ 'attributes.details.map': 1 }")
-            collection.createIndex("{ 'attributes.details.rust_settings.timeZone': 1 }")
-            collection.createIndex("{ 'attributes.details.rust_gamemode': 1 }")
-            collection.createIndex("{ 'attributes.details.rust_type': 1 }")
-            collection.createIndex("{ 'attributes.details.official': 1 }")
-            collection.createIndex("{ 'attributes.details.rust_settings.groupLimit': 1 }")
-            collection.createIndex("{ 'attributes.details.rust_last_wipe': 1 }")
+            collection.createIndex(Document.parse("{ 'attributes.rank': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.country': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.players': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.details.map': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.details.rust_settings.timeZone': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.details.rust_gamemode': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.details.rust_type': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.details.official': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.details.rust_settings.groupLimit': 1 }"))
+            collection.createIndex(Document.parse("{ 'attributes.details.rust_last_wipe': 1 }"))
         }
         collection
     }
 
-    single<CoroutineCollection<User>>(named("users")) {
-        val collection = get<CoroutineDatabase>().getCollection<User>("users")
+    single<MongoCollection<User>>(named("users")) {
+        val collection = get<MongoDatabase>().getCollection<User>("users")
         runBlocking {
-            collection.ensureUniqueIndex(User::username)
+            collection.createIndex(
+                com.mongodb.kotlin.client.model.Indexes.ascending(User::username),
+                IndexOptions().unique(true)
+            )
             val partial = Document("email", Document("\$type", "string"))
             val options = IndexOptions()
                 .name("email_1")
