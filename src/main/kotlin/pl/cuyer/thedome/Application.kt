@@ -83,38 +83,38 @@ fun Application.module() {
     install(StatusPages) {
         exception<UserAlreadyExistsException> { call, cause ->
             logException(call, cause)
-            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
         }
         exception<InvalidCredentialsException> { call, cause ->
             logException(call, cause)
-            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized"))
+            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized", cause::class.simpleName))
         }
         exception<InvalidRefreshTokenException> { call, cause ->
             logException(call, cause)
-            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized"))
+            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized", cause::class.simpleName))
         }
         exception<AnonymousUpgradeException> { call, cause ->
             logException(call, cause)
-            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
         }
         exception<FiltersOptionsException> { call, cause ->
             logException(call, cause)
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error", cause::class.simpleName))
         }
         exception<ServersQueryException> { call, cause ->
             logException(call, cause)
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error", cause::class.simpleName))
         }
         exception<FavoriteLimitException> { call, cause ->
             logException(call, cause)
-            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict"))
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
         }
         exception<Throwable> { call, cause ->
             logException(call, cause)
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error"))
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error", cause::class.simpleName))
         }
         status(HttpStatusCode.NotFound) { call, status ->
-            call.respond(status, ErrorResponse("Page Not Found"))
+            call.respond(status, ErrorResponse("Page Not Found", status::class.simpleName))
         }
     }
     install(CallLogging) {
