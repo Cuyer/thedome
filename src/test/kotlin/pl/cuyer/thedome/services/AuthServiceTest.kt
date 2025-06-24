@@ -25,7 +25,7 @@ class AuthServiceTest {
     fun `registerAnonymous stores user`() = runBlocking {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         coEvery { collection.insertOne(any(), any<InsertOneOptions>()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience")
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000)
 
         val result = service.registerAnonymous()
 
@@ -44,7 +44,7 @@ class AuthServiceTest {
             FindFlow(SimpleFindPublisher(listOf(updated)))
         )
         coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience")
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000)
 
         val result = service.upgradeAnonymous("anon-123", "newuser", "pass")
 
@@ -63,7 +63,7 @@ class AuthServiceTest {
             FindFlow(SimpleFindPublisher(listOf(user)))
         )
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience")
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000)
 
         val result = service.login("user", "pass")
 
@@ -84,7 +84,7 @@ class AuthServiceTest {
         val slotUpdate = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience")
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000)
 
         val result = service.refresh(oldToken)
 

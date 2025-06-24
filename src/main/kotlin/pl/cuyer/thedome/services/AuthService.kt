@@ -19,7 +19,9 @@ class AuthService(
     private val collection: MongoCollection<User>,
     private val jwtSecret: String,
     private val jwtIssuer: String,
-    private val jwtAudience: String
+    private val jwtAudience: String,
+    private val tokenValidityMs: Long,
+    private val anonTokenValidityMs: Long
 ) {
     private val algorithm = Algorithm.HMAC256(jwtSecret)
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
@@ -39,7 +41,7 @@ class AuthService(
         val user = User(username = username, email = email, passwordHash = hash, refreshToken = hashedRefresh)
         collection.insertOne(user)
         logger.info("User $username registered")
-        return TokenPair(generateAccessToken(user), refresh, username, email)
+        return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, username, email)
     }
 
     suspend fun registerAnonymous(): AccessToken {
@@ -48,7 +50,7 @@ class AuthService(
         val user = User(username = username, passwordHash = "", refreshToken = null)
         collection.insertOne(user)
         logger.info("Anonymous user $username registered")
-        return AccessToken(generateAccessToken(user), username)
+        return AccessToken(generateAccessToken(user, anonTokenValidityMs), username)
     }
 
     suspend fun upgradeAnonymous(currentUsername: String, newUsername: String, password: String): TokenPair? {
@@ -64,7 +66,7 @@ class AuthService(
         collection.updateOne(eq(User::username, newUsername), set(User::refreshToken, hashedRefresh))
         logger.info("Anonymous user $currentUsername upgraded to $newUsername")
         val updated = collection.find(eq(User::username, newUsername)).firstOrNull() ?: return null
-        return TokenPair(generateAccessToken(updated), refresh, newUsername, updated.email)
+        return TokenPair(generateAccessToken(updated, tokenValidityMs), refresh, newUsername, updated.email)
     }
 
     suspend fun login(username: String, password: String): TokenPair? {
@@ -75,7 +77,7 @@ class AuthService(
         val hashedRefresh = hashToken(refresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
         logger.info("User ${user.username} logged in")
-        return TokenPair(generateAccessToken(user), refresh, user.username, user.email)
+        return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, user.username, user.email)
     }
 
     suspend fun refresh(refreshToken: String): TokenPair? {
@@ -86,16 +88,16 @@ class AuthService(
         val hashedNew = hashToken(newRefresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedNew))
         logger.info("Issued new refresh token for ${user.username}")
-        return TokenPair(generateAccessToken(user), newRefresh, user.username, user.email)
+        return TokenPair(generateAccessToken(user, tokenValidityMs), newRefresh, user.username, user.email)
     }
 
-    private fun generateAccessToken(user: User): String {
+    private fun generateAccessToken(user: User, validity: Long): String {
         return JWT.create()
             .withAudience(jwtAudience)
             .withIssuer(jwtIssuer)
             .withClaim("username", user.username)
             .withClaim("email", user.email)
-            .withExpiresAt(Date(System.currentTimeMillis() + 3600_000))
+            .withExpiresAt(Date(System.currentTimeMillis() + validity))
             .sign(algorithm)
     }
 

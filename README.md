@@ -27,6 +27,8 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 - `ANON_RATE_LIMIT` – requests per minute allowed for anonymous users (default `60`)
 - `ANON_REFILL_PERIOD` – seconds per anonymous rate limit window (default `60`)
 - `FAVORITES_LIMIT` – maximum favourites for non-subscribers and anonymous users (default `10`)
+- `TOKEN_VALIDITY` – access token lifetime in seconds (default `3600`)
+- `ANON_TOKEN_VALIDITY` – anonymous token lifetime in seconds (default `3600`)
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional filtering. Alongside pagination (`page` and `size`),
@@ -151,6 +153,8 @@ You can run the project and its MongoDB dependency using Docker Compose. The pro
 - `CLEANUP_CRON` – cron expression for server cleanup schedule (optional)
 - `API_KEY` – optional RustMaps API key (optional)
 - `PORT` – application port (defaults to `8080`)
+- `TOKEN_VALIDITY` – access token lifetime in seconds (default `3600`)
+- `ANON_TOKEN_VALIDITY` – anonymous token lifetime in seconds (default `3600`)
 
 You can set these in the `compose.yaml` or via an `.env` file.
 
