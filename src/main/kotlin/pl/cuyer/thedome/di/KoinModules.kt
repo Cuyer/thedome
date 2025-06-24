@@ -89,6 +89,15 @@ fun appModule(config: AppConfig) = module {
     single { ServerCleanupService(get(named("servers"))) }
     single { ServersService(get(named("servers"))) }
     single { FiltersService(get(named("servers"))) }
-    single { AuthService(get(named("users")), config.jwtSecret, config.jwtIssuer, config.jwtAudience) }
+    single {
+        AuthService(
+            get(named("users")),
+            config.jwtSecret,
+            config.jwtIssuer,
+            config.jwtAudience,
+            config.tokenValidity.toLong() * 1000L,
+            config.anonTokenValidity.toLong() * 1000L
+        )
+    }
     single { FavoritesService(get(named("users")), get(named("servers")), config.favoritesLimit) }
 }

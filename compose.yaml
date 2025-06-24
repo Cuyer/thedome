@@ -18,6 +18,8 @@ services:
       # ALLOWED_ORIGINS: "https://example.com,https://example2.com"  # Set allowed CORS origins in production
       # ANON_RATE_LIMIT: 60  # Requests per minute allowed for anonymous users
       # ANON_REFILL_PERIOD: 60  # Seconds per anonymous rate limit window
+      # TOKEN_VALIDITY: 3600  # Access token lifetime in seconds
+      # ANON_TOKEN_VALIDITY: 3600  # Anonymous access token lifetime in seconds
     depends_on:
       - mongo
     networks:
