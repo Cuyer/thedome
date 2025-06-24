@@ -91,7 +91,7 @@ class ServersService(
             totalItems = totalItems,
             servers = enriched
         )
-        logger.info("Returning ${'$'}{serverInfos.size} servers for page $page")
+        logger.info("Returning ${serverInfos.size} servers for page $page")
         return response
     }
 }
