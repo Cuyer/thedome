@@ -9,6 +9,8 @@ data class ServerInfo(
     val id: Long? = null,
     val name: String? = null,
     val wipe: Instant? = null,
+    @SerialName("next_wipe")
+    val nextWipe: Instant? = null,
     val status: ServerStatus? = null,
     val ranking: Int? = null,
     val modded: Boolean? = null,
