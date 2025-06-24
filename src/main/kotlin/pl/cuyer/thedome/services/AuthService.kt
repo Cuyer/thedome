@@ -76,7 +76,7 @@ class AuthService(
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
-        logger.info("User ${'$'}{user.username} logged in")
+        logger.info("User ${user.username} logged in")
         return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, user.username, user.email)
     }
 
@@ -87,7 +87,7 @@ class AuthService(
         val newRefresh = generateRefreshToken()
         val hashedNew = hashToken(newRefresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedNew))
-        logger.info("Issued new refresh token for ${'$'}{user.username}")
+        logger.info("Issued new refresh token for ${user.username}")
         return TokenPair(generateAccessToken(user, tokenValidityMs), newRefresh, user.username, user.email)
     }
 
