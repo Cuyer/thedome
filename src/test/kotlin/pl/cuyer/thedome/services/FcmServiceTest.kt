@@ -37,7 +37,7 @@ class FcmServiceTest {
         val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
         every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(server)))
 
-        val service = FcmService(messaging, collection, 1, 0, credentials)
+        val service = FcmService(messaging, collection, listOf(1), emptyList(), credentials)
         service.checkAndSend()
 
         val captured = slot<Message>()
@@ -48,7 +48,8 @@ class FcmServiceTest {
         assertEquals("1", field(message, "topic"))
         assertEquals(null, field(message, "notification"))
         val data = field(message, "data") as Map<*, *>
-        assertEquals("1", data["id"])
+        assertEquals("Test Server", data["name"])
         assertEquals("Wipe", data["type"])
+        assertEquals((now + 30.seconds).toString(), data["timestamp"])
     }
 }
