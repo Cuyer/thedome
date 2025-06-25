@@ -2,6 +2,7 @@ package pl.cuyer.thedome.services
 
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
+import com.google.auth.oauth2.GoogleCredentials
 import pl.cuyer.thedome.services.NotificationType
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.datetime.Clock
@@ -16,7 +17,8 @@ class FcmService(
     private val messaging: FirebaseMessaging,
     private val servers: MongoCollection<BattlemetricsServerContent>,
     private val notifyBeforeWipe: Int,
-    private val notifyBeforeMapWipe: Int
+    private val notifyBeforeMapWipe: Int,
+    private val credentials: GoogleCredentials
 ) {
     private val logger = LoggerFactory.getLogger(FcmService::class.java)
 
@@ -60,7 +62,8 @@ class FcmService(
             .putData("type", type.name)
             .build()
         try {
-            messaging.send(message)
+            credentials.refreshIfExpired()
+            messaging.sendAsync(message)
         } catch (e: Exception) {
             logger.warn("FCM error ${e.message}")
         }

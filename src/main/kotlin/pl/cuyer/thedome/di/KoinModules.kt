@@ -33,6 +33,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.auth.oauth2.GoogleCredentials
+import java.io.FileInputStream
 
 fun appModule(config: AppConfig) = module {
     single<Json> { Json { ignoreUnknownKeys = true } }
@@ -43,10 +44,20 @@ fun appModule(config: AppConfig) = module {
         }
     }
 
+    single<GoogleCredentials> {
+        val path = System.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+            ?: throw IllegalStateException("GOOGLE_APPLICATION_CREDENTIALS not set")
+        FileInputStream(path).use { stream ->
+            GoogleCredentials.fromStream(stream)
+                .createScoped(listOf("https://www.googleapis.com/auth/firebase.messaging"))
+        }
+    }
+
     single<FirebaseMessaging> {
+        val credentials = get<GoogleCredentials>()
         if (FirebaseApp.getApps().isEmpty()) {
             val options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.getApplicationDefault())
+                .setCredentials(credentials)
                 .build()
             FirebaseApp.initializeApp(options)
         }
@@ -122,7 +133,8 @@ fun appModule(config: AppConfig) = module {
             get(),
             get(named("servers")),
             config.notifyBeforeWipe,
-            config.notifyBeforeMapWipe
+            config.notifyBeforeMapWipe,
+            get()
         )
     }
 }
