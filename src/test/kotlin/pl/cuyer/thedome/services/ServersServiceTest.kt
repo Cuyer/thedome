@@ -132,4 +132,21 @@ class ServersServiceTest {
 
         assertTrue(response.servers.first().isFavorite)
     }
+
+    @Test
+    fun `getServers marks subscriptions`() = runBlocking {
+        val attr = Attributes(id = "a6", name = "Sub Server")
+        val server = BattlemetricsServerContent(attributes = attr, id = "6")
+
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>()
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(server)))
+        coEvery { collection.countDocuments(any<Bson>()) } returns 1
+        coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
+
+        val service = ServersService(collection)
+        val response = service.getServers(Servers(), subscriptions = listOf("6"))
+
+        assertTrue(response.servers.first().isSubscribed)
+    }
 }
+

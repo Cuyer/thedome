@@ -40,10 +40,13 @@ import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
 import pl.cuyer.thedome.services.FavoritesService
+import pl.cuyer.thedome.services.SubscriptionsService
+import pl.cuyer.thedome.services.FcmService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
 import pl.cuyer.thedome.routes.AuthEndpoint
 import pl.cuyer.thedome.routes.FavoritesEndpoint
+import pl.cuyer.thedome.routes.SubscriptionsEndpoint
 import io.ktor.server.plugins.ratelimit.*
 import kotlin.time.Duration.Companion.seconds
 import org.koin.ktor.plugin.Koin
@@ -184,6 +187,7 @@ fun Application.module() {
 
     val fetchService by inject<ServerFetchService>()
     val cleanupService by inject<ServerCleanupService>()
+    val fcmService by inject<FcmService>()
     val schedulerClient by inject<MongoClient>()
     logger.info("Scheduling fetch task with cron expression '${config.fetchCron}'")
     logger.info("Scheduling cleanup task with cron expression '${config.cleanupCron}'")
@@ -202,6 +206,11 @@ fun Application.module() {
             name = "cleanup-servers"
             kronSchedule = { applyCron(config.cleanupCron) }
             task = { cleanupService.cleanupOldServers() }
+        }
+        task {
+            name = "notify-wipes"
+            kronSchedule = { applyCron(config.notificationCron) }
+            task = { fcmService.checkAndSend() }
         }
     }
 
@@ -225,10 +234,12 @@ fun Application.module() {
     val filtersService by inject<FiltersService>()
     val authService by inject<AuthService>()
     val favoritesService by inject<FavoritesService>()
-    val serversEndpoint = ServersEndpoint(serversService, favoritesService)
+    val subscriptionsService by inject<SubscriptionsService>()
+    val serversEndpoint = ServersEndpoint(serversService, favoritesService, subscriptionsService)
     val filtersEndpoint = FiltersEndpoint(filtersService)
     val authEndpoint = AuthEndpoint(authService)
     val favoritesEndpoint = FavoritesEndpoint(favoritesService)
+    val subscriptionsEndpoint = SubscriptionsEndpoint(subscriptionsService)
 
     routing {
         authEndpoint.register(this)
@@ -246,6 +257,7 @@ fun Application.module() {
             serversEndpoint.register(this)
             filtersEndpoint.register(this)
             favoritesEndpoint.register(this)
+            subscriptionsEndpoint.register(this)
         }
         get("/metrics") { call.respondText(metricsRegistry.scrape()) }
         swaggerUI(path = "swagger")

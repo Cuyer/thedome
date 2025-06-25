@@ -44,6 +44,7 @@ dependencies {
     implementation("io.insert-koin:koin-core:$koinVersion")
     implementation("io.insert-koin:koin-ktor:$koinVersion")
     implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.35.0")
     implementation("org.mindrot:jbcrypt:0.4")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("io.mockk:mockk:1.13.9")
