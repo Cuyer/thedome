@@ -33,7 +33,7 @@ class FcmService(
 
     private var cachedToken: Pair<String, Long>? = null
 
-    private suspend fun accessToken(): String {
+    private fun accessToken(): String {
         val cache = cachedToken
         val now = System.currentTimeMillis()
         if (cache != null && now < cache.second) return cache.first
