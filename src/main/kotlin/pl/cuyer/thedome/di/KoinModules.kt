@@ -26,6 +26,8 @@ import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
 import pl.cuyer.thedome.services.FavoritesService
+import pl.cuyer.thedome.services.SubscriptionsService
+import pl.cuyer.thedome.services.FcmService
 import pl.cuyer.thedome.AppConfig
 
 fun appModule(config: AppConfig) = module {
@@ -100,4 +102,15 @@ fun appModule(config: AppConfig) = module {
         )
     }
     single { FavoritesService(get(named("users")), get(named("servers")), config.favoritesLimit) }
+    single { SubscriptionsService(get(named("users")), config.subscriptionsLimit) }
+    single {
+        FcmService(
+            get(),
+            get(named("servers")),
+            get(),
+            config.notifyBeforeWipe,
+            config.notifyBeforeMapWipe
+        )
+    }
 }
+

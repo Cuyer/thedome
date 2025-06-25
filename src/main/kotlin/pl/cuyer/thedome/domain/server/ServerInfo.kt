@@ -11,6 +11,8 @@ data class ServerInfo(
     val wipe: Instant? = null,
     @SerialName("next_wipe")
     val nextWipe: Instant? = null,
+    @SerialName("next_map_wipe")
+    val nextMapWipe: Instant? = null,
     val status: ServerStatus? = null,
     val ranking: Int? = null,
     val modded: Boolean? = null,
@@ -58,5 +60,8 @@ data class ServerInfo(
     @SerialName("is_premium")
     val isPremium: Boolean? = null,
     @SerialName("is_favorite")
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    @SerialName("is_subscribed")
+    val isSubscribed: Boolean = false
 )
+

@@ -36,7 +36,7 @@ class AuthServiceTest {
     @Test
     fun `upgradeAnonymous converts user`() = runBlocking {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
-        val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null, favorites = emptyList())
+        val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null, favorites = emptyList(), subscriptions = emptyList())
         val updated = anon.copy(username = "newuser")
         every { collection.find(any<Bson>()) } returnsMany listOf(
             FindFlow(SimpleFindPublisher(listOf(anon))),
@@ -56,7 +56,7 @@ class AuthServiceTest {
     fun `login hashes refresh token`() = runBlocking {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
-        val user = User(username = "user", email = "user@example.com", passwordHash = passwordHash, favorites = emptyList())
+        val user = User(username = "user", email = "user@example.com", passwordHash = passwordHash, favorites = emptyList(), subscriptions = emptyList())
         val slotUpdate = slot<Bson>()
         every { collection.find(any<Bson>()) } returnsMany listOf(
             FindFlow(SimpleFindPublisher(listOf(user))),
@@ -79,7 +79,7 @@ class AuthServiceTest {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         val oldToken = "old-token"
         val oldHash = hash(oldToken)
-        val user = User(username = "user", email = "user@example.com", passwordHash = "", refreshToken = oldHash, favorites = emptyList())
+        val user = User(username = "user", email = "user@example.com", passwordHash = "", refreshToken = oldHash, favorites = emptyList(), subscriptions = emptyList())
         val slotFind = slot<Bson>()
         val slotUpdate = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns FindFlow(SimpleFindPublisher(listOf(user)))

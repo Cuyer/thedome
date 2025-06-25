@@ -34,6 +34,7 @@ fun BattlemetricsServerContent.toServerInfo(): ServerInfo =
         name = attributes.name,
         wipe = attributes.details?.rustLastWipe?.let(Instant::parse),
         nextWipe = attributes.details?.rustNextWipe?.let(Instant::parse),
+        nextMapWipe = attributes.details?.rustNextWipeMap?.let(Instant::parse),
         status = attributes.status?.uppercase()?.let {
             try {
                 ServerStatus.valueOf(it)

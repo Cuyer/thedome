@@ -18,7 +18,7 @@ class ServersService(
     private val collection: MongoCollection<BattlemetricsServerContent>
 ) {
     private val logger = LoggerFactory.getLogger(ServersService::class.java)
-    suspend fun getServers(params: Servers, favorites: List<String>? = null): ServersResponse {
+    suspend fun getServers(params: Servers, favorites: List<String>? = null, subscriptions: List<String>? = null): ServersResponse {
         logger.info("Querying servers with params: $params")
         val page = params.page ?: 1
         val size = params.size ?: 20
@@ -76,10 +76,12 @@ class ServersService(
             .filter { params.wipeSchedule == null || it.wipeSchedule == params.wipeSchedule }
 
         val favoritesList = favorites ?: emptyList()
+        val subList = subscriptions ?: emptyList()
 
         val enriched = serverInfos.map { info ->
             val fav = info.id?.toString()?.let { favoritesList.contains(it) } ?: false
-            info.copy(isFavorite = fav)
+            val sub = info.id?.toString()?.let { subList.contains(it) } ?: false
+            info.copy(isFavorite = fav, isSubscribed = sub)
         }
 
         val totalPages = if (size == 0) 0 else ((totalItems + size - 1) / size).toInt()
