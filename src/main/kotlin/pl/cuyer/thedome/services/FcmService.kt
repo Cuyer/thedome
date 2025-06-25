@@ -3,63 +3,81 @@ package pl.cuyer.thedome.services
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
 import com.google.auth.oauth2.GoogleCredentials
-import pl.cuyer.thedome.services.NotificationType
 import kotlin.time.Duration.Companion.minutes
-import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.toList
+import kotlinx.datetime.Clock
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import com.mongodb.client.model.Filters
-import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import org.slf4j.LoggerFactory
+import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
+import pl.cuyer.thedome.services.NotificationType
 
 class FcmService(
     private val messaging: FirebaseMessaging,
     private val servers: MongoCollection<BattlemetricsServerContent>,
-    private val notifyBeforeWipe: Int,
-    private val notifyBeforeMapWipe: Int,
+    private val notifyBeforeWipe: List<Int>,
+    private val notifyBeforeMapWipe: List<Int>,
     private val credentials: GoogleCredentials
 ) {
     private val logger = LoggerFactory.getLogger(FcmService::class.java)
 
     suspend fun checkAndSend() {
         val now = Clock.System.now()
+        data class Range(val start: String, val end: String)
 
-        val wipeStart = now + notifyBeforeWipe.minutes - 60.seconds
-        val wipeEnd = now + notifyBeforeWipe.minutes
-        val mapStart = now + notifyBeforeMapWipe.minutes - 60.seconds
-        val mapEnd = now + notifyBeforeMapWipe.minutes
+        val wipeRanges = notifyBeforeWipe.map { minutes ->
+            val start = now + minutes.minutes - 60.seconds
+            val end = now + minutes.minutes
+            Range(start.toString(), end.toString())
+        }
+        val mapRanges = notifyBeforeMapWipe.map { minutes ->
+            val start = now + minutes.minutes - 60.seconds
+            val end = now + minutes.minutes
+            Range(start.toString(), end.toString())
+        }
 
-        val filter = Filters.or(
+        val filters = (wipeRanges.map { r ->
             Filters.and(
                 Filters.exists("attributes.details.rust_next_wipe"),
-                Filters.gte("attributes.details.rust_next_wipe", wipeStart.toString()),
-                Filters.lt("attributes.details.rust_next_wipe", wipeEnd.toString())
-            ),
+                Filters.gte("attributes.details.rust_next_wipe", r.start),
+                Filters.lt("attributes.details.rust_next_wipe", r.end)
+            )
+        } + mapRanges.map { r ->
             Filters.and(
                 Filters.exists("attributes.details.rust_next_wipe_map"),
-                Filters.gte("attributes.details.rust_next_wipe_map", mapStart.toString()),
-                Filters.lt("attributes.details.rust_next_wipe_map", mapEnd.toString())
+                Filters.gte("attributes.details.rust_next_wipe_map", r.start),
+                Filters.lt("attributes.details.rust_next_wipe_map", r.end)
             )
-        )
+        }).toTypedArray()
 
+        if (filters.isEmpty()) return
+        val filter = Filters.or(*filters)
         val due = servers.find(filter).toList()
+
         for (server in due) {
             val id = server.id
             if (id.isEmpty()) continue
-            val nextMap = server.attributes.details?.rustNextWipeMap
-            val mapDue = nextMap != null && nextMap >= mapStart.toString() && nextMap < mapEnd.toString()
+            val details = server.attributes.details
+            val mapWipe = details?.rustNextWipeMap
+            val wipe = details?.rustNextWipe
+            val mapDue = mapWipe != null && mapRanges.any { mapWipe >= it.start && mapWipe < it.end }
             val type = if (mapDue) NotificationType.MapWipe else NotificationType.Wipe
-            sendToTopic(id, type)
+            val timestamp = if (mapDue) mapWipe else wipe
+            val name = server.attributes.name
+            if (timestamp != null && name != null) {
+                sendToTopic(id, name, type, timestamp)
+            }
         }
     }
 
-    private fun sendToTopic(topic: String, type: NotificationType) {
+    private fun sendToTopic(topic: String, name: String, type: NotificationType, timestamp: String) {
         logger.info("Sending notification to topic '{}'", topic)
         val message = Message.builder()
             .setTopic(topic)
-            .putData("id", topic)
+            .putData("name", name)
             .putData("type", type.name)
+            .putData("timestamp", timestamp)
             .build()
         try {
             credentials.refreshIfExpired()
@@ -69,5 +87,3 @@ class FcmService(
         }
     }
 }
-
-

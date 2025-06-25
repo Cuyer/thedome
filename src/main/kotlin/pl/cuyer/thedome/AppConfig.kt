@@ -19,8 +19,8 @@ data class AppConfig(
     val tokenValidity: Int,
     val anonTokenValidity: Int,
     val notificationCron: String,
-    val notifyBeforeWipe: Int,
-    val notifyBeforeMapWipe: Int
+    val notifyBeforeWipe: List<Int>,
+    val notifyBeforeMapWipe: List<Int>
 ) {
     companion object {
         fun load(config: ApplicationConfig): AppConfig {
@@ -42,8 +42,16 @@ data class AppConfig(
             val tokenValidity = section.propertyOrNull("tokenValidity")?.getString()?.toIntOrNull() ?: 3600
             val anonTokenValidity = section.propertyOrNull("anonTokenValidity")?.getString()?.toIntOrNull() ?: 3600
             val notificationCron = section.propertyOrNull("notificationCron")?.getString() ?: "0 * * * *"
-            val notifyBeforeWipe = section.propertyOrNull("notifyBeforeWipe")?.getString()?.toIntOrNull() ?: 0
-            val notifyBeforeMapWipe = section.propertyOrNull("notifyBeforeMapWipe")?.getString()?.toIntOrNull() ?: 0
+            val notifyBeforeWipe = section.propertyOrNull("notifyBeforeWipe")
+                ?.getString()
+                ?.split(",")
+                ?.mapNotNull { it.trim().toIntOrNull() }
+                ?: emptyList()
+            val notifyBeforeMapWipe = section.propertyOrNull("notifyBeforeMapWipe")
+                ?.getString()
+                ?.split(",")
+                ?.mapNotNull { it.trim().toIntOrNull() }
+                ?: emptyList()
             return AppConfig(
                 allowedOrigins,
                 jwtAudience,
