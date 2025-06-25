@@ -11,6 +11,8 @@ data class ServerInfo(
     val wipe: Instant? = null,
     @SerialName("next_wipe")
     val nextWipe: Instant? = null,
+    @SerialName("next_map_wipe")
+    val nextMapWipe: Instant? = null,
     val status: ServerStatus? = null,
     val ranking: Int? = null,
     val modded: Boolean? = null,
