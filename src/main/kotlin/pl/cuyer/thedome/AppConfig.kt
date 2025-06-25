@@ -16,7 +16,10 @@ data class AppConfig(
     val anonRefillPeriod: Int,
     val favoritesLimit: Int,
     val tokenValidity: Int,
-    val anonTokenValidity: Int
+    val anonTokenValidity: Int,
+    val notificationCron: String,
+    val notifyBeforeWipe: Int,
+    val notifyBeforeMapWipe: Int
 ) {
     companion object {
         fun load(config: ApplicationConfig): AppConfig {
@@ -36,6 +39,9 @@ data class AppConfig(
             val favoritesLimit = section.propertyOrNull("favoritesLimit")?.getString()?.toIntOrNull() ?: 10
             val tokenValidity = section.propertyOrNull("tokenValidity")?.getString()?.toIntOrNull() ?: 3600
             val anonTokenValidity = section.propertyOrNull("anonTokenValidity")?.getString()?.toIntOrNull() ?: 3600
+            val notificationCron = section.propertyOrNull("notificationCron")?.getString() ?: "0 * * * *"
+            val notifyBeforeWipe = section.propertyOrNull("notifyBeforeWipe")?.getString()?.toIntOrNull() ?: 0
+            val notifyBeforeMapWipe = section.propertyOrNull("notifyBeforeMapWipe")?.getString()?.toIntOrNull() ?: 0
             return AppConfig(
                 allowedOrigins,
                 jwtAudience,
@@ -50,7 +56,10 @@ data class AppConfig(
                 anonRefillPeriod,
                 favoritesLimit,
                 tokenValidity,
-                anonTokenValidity
+                anonTokenValidity,
+                notificationCron,
+                notifyBeforeWipe,
+                notifyBeforeMapWipe
             )
         }
     }

@@ -29,6 +29,9 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 - `FAVORITES_LIMIT` – maximum favourites for non-subscribers and anonymous users (default `10`)
 - `TOKEN_VALIDITY` – access token lifetime in seconds (default `3600`)
 - `ANON_TOKEN_VALIDITY` – anonymous token lifetime in seconds (default `3600`)
+- `NOTIFICATION_CRON` – cron expression for wipe notification schedule (default `0 * * * *`)
+- `NOTIFY_BEFORE_WIPE` – minutes before a wipe to send notifications (default `0`)
+- `NOTIFY_BEFORE_MAP_WIPE` – minutes before a map wipe to send notifications (default `0`)
 - Unhandled exceptions are logged via Ktor's `StatusPages` plugin
 
 Query servers with optional filtering. Alongside pagination (`page` and `size`),
