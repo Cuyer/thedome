@@ -29,6 +29,10 @@ import pl.cuyer.thedome.services.FavoritesService
 import pl.cuyer.thedome.services.SubscriptionsService
 import pl.cuyer.thedome.services.FcmService
 import pl.cuyer.thedome.AppConfig
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.auth.oauth2.GoogleCredentials
 
 fun appModule(config: AppConfig) = module {
     single<Json> { Json { ignoreUnknownKeys = true } }
@@ -37,6 +41,16 @@ fun appModule(config: AppConfig) = module {
         HttpClient(CIO) {
             install(ClientContentNegotiation) { json(get()) }
         }
+    }
+
+    single<FirebaseMessaging> {
+        if (FirebaseApp.getApps().isEmpty()) {
+            val options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.getApplicationDefault())
+                .build()
+            FirebaseApp.initializeApp(options)
+        }
+        FirebaseMessaging.getInstance()
     }
 
     single<MongoClient> {
@@ -107,7 +121,6 @@ fun appModule(config: AppConfig) = module {
         FcmService(
             get(),
             get(named("servers")),
-            get(),
             config.notifyBeforeWipe,
             config.notifyBeforeMapWipe
         )

@@ -1,20 +1,10 @@
 package pl.cuyer.thedome.services
 
-import com.google.auth.oauth2.GoogleCredentials
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.request.header
-import io.ktor.client.statement.HttpResponse
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
-import java.io.FileInputStream
-import java.io.IOException
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.Message
+import pl.cuyer.thedome.services.NotificationType
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.toList
 import com.mongodb.kotlin.client.coroutine.MongoCollection
@@ -23,32 +13,12 @@ import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import org.slf4j.LoggerFactory
 
 class FcmService(
-    private val httpClient: HttpClient,
+    private val messaging: FirebaseMessaging,
     private val servers: MongoCollection<BattlemetricsServerContent>,
-    private val json: Json,
     private val notifyBeforeWipe: Int,
     private val notifyBeforeMapWipe: Int
 ) {
     private val logger = LoggerFactory.getLogger(FcmService::class.java)
-
-    private var cachedToken: Pair<String, Long>? = null
-
-    private fun accessToken(): String {
-        val cache = cachedToken
-        val now = System.currentTimeMillis()
-        if (cache != null && now < cache.second) return cache.first
-        val path = System.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-            ?: throw IllegalStateException("GOOGLE_APPLICATION_CREDENTIALS not set")
-        val creds = FileInputStream(path).use { fis ->
-            GoogleCredentials.fromStream(fis)
-                .createScoped(listOf("https://www.googleapis.com/auth/firebase.messaging"))
-        }
-        creds.refresh()
-        val token = creds.accessToken.tokenValue
-        val expiry = creds.accessToken.expirationTime.time
-        cachedToken = token to expiry
-        return token
-    }
 
     suspend fun checkAndSend() {
         val now = Clock.System.now()
@@ -76,40 +46,29 @@ class FcmService(
             val id = server.id
             if (id.isNullOrEmpty()) continue
             val name = server.attributes.name ?: "Server $id"
-            val next = server.attributes.details?.rustNextWipe
             val nextMap = server.attributes.details?.rustNextWipeMap
 
             val mapDue = nextMap != null && nextMap >= mapStart.toString() && nextMap < mapEnd.toString()
             val title = if (mapDue) "Server map wipe" else "Server wipe"
-            sendToTopic(id, title, name)
+            val type = if (mapDue) NotificationType.MapWipe else NotificationType.Wipe
+            sendToTopic(id, title, name, type)
         }
     }
 
-    private suspend fun sendToTopic(topic: String, title: String, body: String) {
-        val token = accessToken()
-        val payload = FcmRequest(
-            message = Message(
-                topic = topic,
-                notification = Notification(title, body)
-            )
-        )
-        val response: HttpResponse = httpClient.post("https://fcm.googleapis.com/v1/projects/-/messages:send") {
-            header("Authorization", "Bearer $token")
-            header("Content-Type", "application/json; UTF-8")
-            setBody(json.encodeToString(payload))
-        }
-        if (response.status.value !in 200..299) {
-            logger.warn("FCM error ${response.status.value}")
+    private fun sendToTopic(topic: String, title: String, body: String, type: NotificationType) {
+        val message = Message.builder()
+            .setTopic(topic)
+            .putData("title", title)
+            .putData("body", body)
+            .putData("id", topic)
+            .putData("type", type.name)
+            .build()
+        try {
+            messaging.send(message)
+        } catch (e: Exception) {
+            logger.warn("FCM error ${e.message}")
         }
     }
 }
 
-@Serializable
-private data class FcmRequest(val message: Message)
-
-@Serializable
-private data class Message(val topic: String, val notification: Notification)
-
-@Serializable
-private data class Notification(val title: String, val body: String)
 
