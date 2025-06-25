@@ -63,6 +63,7 @@ import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
 import pl.cuyer.thedome.exceptions.FiltersOptionsException
 import pl.cuyer.thedome.exceptions.ServersQueryException
 import pl.cuyer.thedome.exceptions.FavoriteLimitException
+import pl.cuyer.thedome.exceptions.SubscriptionLimitException
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 
@@ -109,6 +110,10 @@ fun Application.module() {
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error", cause::class.simpleName))
         }
         exception<FavoriteLimitException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
+        }
+        exception<SubscriptionLimitException> { call, cause ->
             logException(call, cause)
             call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
         }

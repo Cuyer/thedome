@@ -5,12 +5,14 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import com.mongodb.kotlin.client.coroutine.FindFlow
 import com.mongodb.kotlin.client.model.Filters.eq
 import org.bson.conversions.Bson
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.util.SimpleFindPublisher
+import pl.cuyer.thedome.exceptions.SubscriptionLimitException
 
 class SubscriptionsServiceTest {
     @Test
@@ -20,12 +22,38 @@ class SubscriptionsServiceTest {
         val slotUpdate = slot<Bson>()
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = SubscriptionsService(users)
+        val service = SubscriptionsService(users, 3)
 
         val result = service.subscribe("user", "1")
 
         assertTrue(result)
         assertTrue(slotUpdate.captured.toString().contains("1"))
+    }
+
+    @Test
+    fun `subscribe respects limit`() = runBlocking<Unit> {
+        val users = mockk<MongoCollection<User>>(relaxed = true)
+        val user = User(username = "user", email = null, passwordHash = "", subscriptions = listOf("1", "2", "3"))
+        every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        val service = SubscriptionsService(users, 3)
+        assertFailsWith<SubscriptionLimitException> {
+            service.subscribe("user", "4")
+        }
+    }
+
+    @Test
+    fun `subscribe ignores limit for subscriber`() = runBlocking {
+        val users = mockk<MongoCollection<User>>(relaxed = true)
+        val slotUpdate = slot<Bson>()
+        val user = User(username = "user", email = null, passwordHash = "", subscriptions = listOf("1", "2", "3"), subscriber = true)
+        every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
+        val service = SubscriptionsService(users, 3)
+
+        val result = service.subscribe("user", "4")
+
+        assertTrue(result)
+        assertTrue(slotUpdate.captured.toString().contains("4"))
     }
 
     @Test
@@ -35,7 +63,7 @@ class SubscriptionsServiceTest {
         val slotUpdate = slot<Bson>()
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = SubscriptionsService(users)
+        val service = SubscriptionsService(users, 3)
 
         val result = service.unsubscribe("user", "1")
 
@@ -48,7 +76,7 @@ class SubscriptionsServiceTest {
         val users = mockk<MongoCollection<User>>(relaxed = true)
         val user = User(username = "user", email = null, passwordHash = "", subscriptions = emptyList())
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
-        val service = SubscriptionsService(users)
+        val service = SubscriptionsService(users, 3)
 
         val result = service.unsubscribe("user", "1")
 

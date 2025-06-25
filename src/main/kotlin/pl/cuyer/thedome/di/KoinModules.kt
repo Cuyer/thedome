@@ -102,7 +102,7 @@ fun appModule(config: AppConfig) = module {
         )
     }
     single { FavoritesService(get(named("users")), get(named("servers")), config.favoritesLimit) }
-    single { SubscriptionsService(get(named("users"))) }
+    single { SubscriptionsService(get(named("users")), config.subscriptionsLimit) }
     single {
         FcmService(
             get(),
