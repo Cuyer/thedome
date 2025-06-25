@@ -44,22 +44,18 @@ class FcmService(
         val due = servers.find(filter).toList()
         for (server in due) {
             val id = server.id
-            if (id.isNullOrEmpty()) continue
-            val name = server.attributes.name ?: "Server $id"
+            if (id.isEmpty()) continue
             val nextMap = server.attributes.details?.rustNextWipeMap
-
             val mapDue = nextMap != null && nextMap >= mapStart.toString() && nextMap < mapEnd.toString()
-            val title = if (mapDue) "Server map wipe" else "Server wipe"
             val type = if (mapDue) NotificationType.MapWipe else NotificationType.Wipe
-            sendToTopic(id, title, name, type)
+            sendToTopic(id, type)
         }
     }
 
-    private fun sendToTopic(topic: String, title: String, body: String, type: NotificationType) {
+    private fun sendToTopic(topic: String, type: NotificationType) {
+        logger.info("Sending notification to topic '{}'", topic)
         val message = Message.builder()
             .setTopic(topic)
-            .putData("title", title)
-            .putData("body", body)
             .putData("id", topic)
             .putData("type", type.name)
             .build()
