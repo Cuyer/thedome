@@ -27,6 +27,7 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 - `ANON_RATE_LIMIT` – requests per minute allowed for anonymous users (default `60`)
 - `ANON_REFILL_PERIOD` – seconds per anonymous rate limit window (default `60`)
 - `FAVORITES_LIMIT` – maximum favourites for non-subscribers and anonymous users (default `10`)
+- `SUBSCRIPTIONS_LIMIT` – maximum subscriptions for non-subscribers and anonymous users (default `10`)
 - `TOKEN_VALIDITY` – access token lifetime in seconds (default `3600`)
 - `ANON_TOKEN_VALIDITY` – anonymous token lifetime in seconds (default `3600`)
 - `NOTIFICATION_CRON` – cron expression for wipe notification schedule (default `0 * * * *`)
@@ -124,6 +125,17 @@ and anonymous users may only store up to `FAVORITES_LIMIT` servers.
 GET    /favorites            # list favourite servers (paged)
 POST   /favorites/{id}       # add server to favourites
 DELETE /favorites/{id}       # remove server from favourites
+```
+
+## Subscriptions
+
+Users can subscribe to servers for wipe notifications. Non-subscribers and
+anonymous users may only follow up to `SUBSCRIPTIONS_LIMIT` servers.
+
+```
+GET    /subscriptions        # list subscribed server IDs
+POST   /subscriptions/{id}   # subscribe to a server
+DELETE /subscriptions/{id}   # unsubscribe from a server
 ```
 
 ## Docker
