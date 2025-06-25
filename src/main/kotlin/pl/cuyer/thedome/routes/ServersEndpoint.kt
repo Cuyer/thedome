@@ -1,6 +1,7 @@
 package pl.cuyer.thedome.routes
 
 import io.ktor.server.application.*
+import io.ktor.server.auth.authenticate
 import io.ktor.server.resources.get
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
@@ -17,16 +18,18 @@ class ServersEndpoint(
 ) {
     fun register(route: Route) {
         with(route) {
-            get<Servers> { params ->
-                val principal = call.principal<JWTPrincipal>()
-                val username = principal?.getClaim("username", String::class)
-                val favorites = username?.let { favoritesService.getFavoriteIds(it) }
-                val response = try {
-                    service.getServers(params, favorites)
-                } catch (e: Exception) {
-                    throw ServersQueryException()
+            authenticate("auth-jwt") {
+                get<Servers> { params ->
+                    val principal = call.principal<JWTPrincipal>()
+                    val username = principal?.getClaim("username", String::class)
+                    val favorites = username?.let { favoritesService.getFavoriteIds(it) }
+                    val response = try {
+                        service.getServers(params, favorites)
+                    } catch (e: Exception) {
+                        throw ServersQueryException()
+                    }
+                    call.respond(response)
                 }
-                call.respond(response)
             }
         }
     }
