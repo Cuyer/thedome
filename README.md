@@ -49,6 +49,7 @@ the following parameters can be used:
 - `playerCount` – min player count
 - `groupLimit` – maximum group limit
 - `order` – ordering field (`WIPE`, `RANK`, `PLAYER_COUNT`; defaults to `WIPE`)
+- `filter` – limit results (`ALL`, `FAVORITES`, `SUBSCRIBED`; defaults to `ALL`)
 - `name` – substring match on server name
 - `blueprints` – blueprint availability
 - `kits` – kits availability

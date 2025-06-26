@@ -148,5 +148,46 @@ class ServersServiceTest {
 
         assertTrue(response.servers.first().isSubscribed)
     }
+
+    @Test
+    fun `getServers filters favorites`() = runBlocking {
+        val attr = Attributes(id = "a7", name = "Fav Only")
+        val server = BattlemetricsServerContent(attributes = attr, id = "7")
+
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(server)))
+        coEvery { collection.countDocuments(any<Bson>()) } returns 1
+        coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
+
+        val service = ServersService(collection)
+        val response = service.getServers(
+            Servers(filter = ServerFilter.FAVORITES),
+            favorites = listOf("7")
+        )
+
+        assertEquals(1, response.servers.size)
+        assertTrue(response.servers.first().isFavorite)
+    }
+
+    @Test
+    fun `getServers filters subscriptions`() = runBlocking {
+        val attr = Attributes(id = "a8", name = "Sub Only")
+        val server = BattlemetricsServerContent(attributes = attr, id = "8")
+
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(server)))
+        coEvery { collection.countDocuments(any<Bson>()) } returns 1
+        coEvery { collection.countDocuments(any<Bson>(), any()) } returns 1
+
+        val service = ServersService(collection)
+        val response = service.getServers(
+            Servers(filter = ServerFilter.SUBSCRIBED),
+            subscriptions = listOf("8")
+        )
+
+        assertEquals(1, response.servers.size)
+        assertTrue(response.servers.first().isSubscribed)
+    }
 }
+
 
