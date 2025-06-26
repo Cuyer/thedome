@@ -9,35 +9,35 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.resources.*
 import io.ktor.server.routing.*
-import pl.cuyer.thedome.resources.Favorites
-import pl.cuyer.thedome.services.FavoritesService
-import pl.cuyer.thedome.exceptions.FavoriteLimitException
+import pl.cuyer.thedome.resources.Favourites
+import pl.cuyer.thedome.services.FavouritesService
+import pl.cuyer.thedome.exceptions.FavouriteLimitException
 
-class FavoritesEndpoint(private val service: FavoritesService) {
+class FavouritesEndpoint(private val service: FavouritesService) {
     fun register(route: Route) {
         with(route) {
             authenticate("auth-jwt") {
-                get<Favorites> { params ->
+                get<Favourites> { params ->
                     val principal = call.principal<JWTPrincipal>()!!
                     val username = principal.getClaim("username", String::class)!!
                     val page = params.page ?: 1
                     val size = params.size ?: 20
-                    val result = service.getFavorites(username, page, size)
+                    val result = service.getFavourites(username, page, size)
                     call.respond(result)
                 }
-                post("/favorites/{id}") {
+                post("/favourites/{id}") {
                     val principal = call.principal<JWTPrincipal>()!!
                     val username = principal.getClaim("username", String::class)!!
                     val serverId = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest)
-                    val added = service.addFavorite(username, serverId)
-                    if (!added) throw FavoriteLimitException()
+                    val added = service.addFavourite(username, serverId)
+                    if (!added) throw FavouriteLimitException()
                     call.respond(HttpStatusCode.Created)
                 }
-                delete("/favorites/{id}") {
+                delete("/favourites/{id}") {
                     val principal = call.principal<JWTPrincipal>()!!
                     val username = principal.getClaim("username", String::class)!!
                     val serverId = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
-                    val removed = service.removeFavorite(username, serverId)
+                    val removed = service.removeFavourite(username, serverId)
                     if (!removed) return@delete call.respond(HttpStatusCode.NotFound)
                     call.respond(HttpStatusCode.NoContent)
                 }

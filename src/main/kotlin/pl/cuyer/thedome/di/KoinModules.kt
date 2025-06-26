@@ -25,7 +25,7 @@ import pl.cuyer.thedome.services.ServerCleanupService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
-import pl.cuyer.thedome.services.FavoritesService
+import pl.cuyer.thedome.services.FavouritesService
 import pl.cuyer.thedome.services.SubscriptionsService
 import pl.cuyer.thedome.services.FcmService
 import pl.cuyer.thedome.AppConfig
@@ -126,7 +126,7 @@ fun appModule(config: AppConfig) = module {
             config.anonTokenValidity.toLong() * 1000L
         )
     }
-    single { FavoritesService(get(named("users")), get(named("servers")), config.favoritesLimit) }
+    single { FavouritesService(get(named("users")), get(named("servers")), config.favouritesLimit) }
     single { SubscriptionsService(get(named("users")), config.subscriptionsLimit) }
     single {
         FcmService(

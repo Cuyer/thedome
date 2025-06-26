@@ -60,7 +60,7 @@ data class ServerInfo(
     @SerialName("is_premium")
     val isPremium: Boolean? = null,
     @SerialName("is_favorite")
-    val isFavorite: Boolean = false,
+    val isFavourite: Boolean = false,
     @SerialName("is_subscribed")
     val isSubscribed: Boolean = false
 )

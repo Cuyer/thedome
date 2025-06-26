@@ -118,7 +118,7 @@ class ServersServiceTest {
     }
 
     @Test
-    fun `getServers marks favorites`() = runBlocking {
+    fun `getServers marks favourites`() = runBlocking {
         val attr = Attributes(id = "a5", name = "Fav Server")
         val server = BattlemetricsServerContent(attributes = attr, id = "5")
 
@@ -130,7 +130,7 @@ class ServersServiceTest {
         val service = ServersService(collection)
         val response = service.getServers(Servers(), listOf("5"))
 
-        assertTrue(response.servers.first().isFavorite)
+        assertTrue(response.servers.first().isFavourite)
     }
 
     @Test
@@ -150,7 +150,7 @@ class ServersServiceTest {
     }
 
     @Test
-    fun `getServers filters favorites`() = runBlocking {
+    fun `getServers filters favourites`() = runBlocking {
         val attr = Attributes(id = "a7", name = "Fav Only")
         val server = BattlemetricsServerContent(attributes = attr, id = "7")
 
@@ -161,12 +161,12 @@ class ServersServiceTest {
 
         val service = ServersService(collection)
         val response = service.getServers(
-            Servers(filter = ServerFilter.FAVORITES),
-            favorites = listOf("7")
+            Servers(filter = ServerFilter.FAVOURITES),
+            favourites = listOf("7")
         )
 
         assertEquals(1, response.servers.size)
-        assertTrue(response.servers.first().isFavorite)
+        assertTrue(response.servers.first().isFavourite)
     }
 
     @Test

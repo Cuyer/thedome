@@ -19,18 +19,18 @@ class ServersService(
     private val collection: MongoCollection<BattlemetricsServerContent>
 ) {
     private val logger = LoggerFactory.getLogger(ServersService::class.java)
-    suspend fun getServers(params: Servers, favorites: List<String>? = null, subscriptions: List<String>? = null): ServersResponse {
+    suspend fun getServers(params: Servers, favourites: List<String>? = null, subscriptions: List<String>? = null): ServersResponse {
         logger.info("Querying servers with params: $params")
         val page = params.page ?: 1
         val size = params.size ?: 20
         val skip = (page - 1) * size
 
-        val favoritesList = favorites ?: emptyList()
+        val favouritesList = favourites ?: emptyList()
         val subList = subscriptions ?: emptyList()
 
         val filters = mutableListOf<Bson>()
         when (params.filter) {
-            ServerFilter.FAVORITES -> filters += Filters.`in`("id", favoritesList)
+            ServerFilter.FAVOURITES -> filters += Filters.`in`("id", favouritesList)
             ServerFilter.SUBSCRIBED -> filters += Filters.`in`("id", subList)
             else -> {}
         }
@@ -85,9 +85,9 @@ class ServersService(
             .filter { params.wipeSchedule == null || it.wipeSchedule == params.wipeSchedule }
 
         val enriched = serverInfos.map { info ->
-            val fav = info.id?.toString()?.let { favoritesList.contains(it) } ?: false
+            val fav = info.id?.toString()?.let { favouritesList.contains(it) } ?: false
             val sub = info.id?.toString()?.let { subList.contains(it) } ?: false
-            info.copy(isFavorite = fav, isSubscribed = sub)
+            info.copy(isFavourite = fav, isSubscribed = sub)
         }
 
         val totalPages = if (size == 0) 0 else ((totalItems + size - 1) / size).toInt()

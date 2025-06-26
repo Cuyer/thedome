@@ -14,7 +14,7 @@ data class AppConfig(
     val apiKey: String,
     val anonRateLimit: Int,
     val anonRefillPeriod: Int,
-    val favoritesLimit: Int,
+    val favouritesLimit: Int,
     val subscriptionsLimit: Int,
     val tokenValidity: Int,
     val anonTokenValidity: Int,
@@ -37,7 +37,7 @@ data class AppConfig(
             val apiKey = section.propertyOrNull("apiKey")?.getString() ?: ""
             val anonRateLimit = section.propertyOrNull("anonRateLimit")?.getString()?.toIntOrNull() ?: 60
             val anonRefillPeriod = section.propertyOrNull("anonRefillPeriod")?.getString()?.toIntOrNull() ?: 60
-            val favoritesLimit = section.propertyOrNull("favoritesLimit")?.getString()?.toIntOrNull() ?: 10
+            val favouritesLimit = section.propertyOrNull("favouritesLimit")?.getString()?.toIntOrNull() ?: 10
             val subscriptionsLimit = section.propertyOrNull("subscriptionsLimit")?.getString()?.toIntOrNull() ?: 10
             val tokenValidity = section.propertyOrNull("tokenValidity")?.getString()?.toIntOrNull() ?: 3600
             val anonTokenValidity = section.propertyOrNull("anonTokenValidity")?.getString()?.toIntOrNull() ?: 3600
@@ -64,7 +64,7 @@ data class AppConfig(
                 apiKey,
                 anonRateLimit,
                 anonRefillPeriod,
-                favoritesLimit,
+                favouritesLimit,
                 subscriptionsLimit,
                 tokenValidity,
                 anonTokenValidity,
