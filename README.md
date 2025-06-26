@@ -49,7 +49,7 @@ the following parameters can be used:
 - `playerCount` – min player count
 - `groupLimit` – maximum group limit
 - `order` – ordering field (`WIPE`, `RANK`, `PLAYER_COUNT`; defaults to `WIPE`)
-- `filter` – limit results (`ALL`, `FAVORITES`, `SUBSCRIBED`; defaults to `ALL`)
+- `filter` – limit results (`ALL`, `FAVOURITES`, `SUBSCRIBED`; defaults to `ALL`)
 - `name` – substring match on server name
 - `blueprints` – blueprint availability
 - `kits` – kits availability
@@ -117,13 +117,13 @@ Battlemetrics. Recent additions include `average_fps`, `pve`, `website`,
 second, PvE status, server homepage, premium status, and whether the
 server is one of your favourites.
 
-## Favorites
+## Favourites
 
 Authenticated users can manage a list of favourite servers. Non-subscribers
-and anonymous users may only store up to `FAVORITES_LIMIT` servers.
+and anonymous users may only store up to `FAVOURITES_LIMIT` servers.
 
 ```
-GET    /favorites            # list favourite servers (paged)
+GET    /favourites            # list favourite servers (paged)
 POST   /favourites/{id}       # add server to favourites
 DELETE /favourites/{id}       # remove server from favourites
 ```

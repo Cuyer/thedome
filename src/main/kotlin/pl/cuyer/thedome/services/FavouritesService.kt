@@ -13,45 +13,45 @@ import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
 import pl.cuyer.thedome.domain.server.ServersResponse
 
-class FavoritesService(
+class FavouritesService(
     private val users: MongoCollection<User>,
     private val servers: MongoCollection<BattlemetricsServerContent>,
     private val limit: Int
 ) {
-    suspend fun getFavoriteIds(username: String): List<String> {
+    suspend fun getFavouriteIds(username: String): List<String> {
         val user = users.find(eq(User::username, username)).firstOrNull()
-        return user?.favorites ?: emptyList()
+        return user?.favourites ?: emptyList()
     }
-    suspend fun addFavorite(username: String, serverId: String): Boolean {
+    suspend fun addFavourite(username: String, serverId: String): Boolean {
         val user = users.find(eq(User::username, username)).firstOrNull() ?: return false
-        if (user.favorites.contains(serverId)) return true
-        if (!user.subscriber && user.favorites.size >= limit) return false
-        users.updateOne(eq(User::username, username), push(User::favorites, serverId))
+        if (user.favourites.contains(serverId)) return true
+        if (!user.subscriber && user.favourites.size >= limit) return false
+        users.updateOne(eq(User::username, username), push(User::favourites, serverId))
         return true
     }
 
-    suspend fun removeFavorite(username: String, serverId: String): Boolean {
+    suspend fun removeFavourite(username: String, serverId: String): Boolean {
         val user = users.find(eq(User::username, username)).firstOrNull() ?: return false
-        if (!user.favorites.contains(serverId)) return false
-        users.updateOne(eq(User::username, username), pull(User::favorites, serverId))
+        if (!user.favourites.contains(serverId)) return false
+        users.updateOne(eq(User::username, username), pull(User::favourites, serverId))
         return true
     }
 
-    suspend fun getFavorites(username: String, page: Int, size: Int): ServersResponse {
+    suspend fun getFavourites(username: String, page: Int, size: Int): ServersResponse {
         val user = users.find(eq(User::username, username)).firstOrNull()
-        val favorites = user?.favorites ?: emptyList()
+        val favourites = user?.favourites ?: emptyList()
         val skip = (page - 1) * size
-        val query = if (favorites.isEmpty()) {
+        val query = if (favourites.isEmpty()) {
             emptyList<BattlemetricsServerContent>()
         } else {
-            servers.find(Filters.`in`("id", favorites))
+            servers.find(Filters.`in`("id", favourites))
                 .sort(Sorts.ascending("attributes.rank"))
                 .skip(skip)
                 .limit(size)
                 .toList()
         }
         val serverInfos = query.map { it.toServerInfo() }
-        val totalItems = favorites.size.toLong()
+        val totalItems = favourites.size.toLong()
         val totalPages = if (size == 0) 0 else ((totalItems + size - 1) / size).toInt()
         return ServersResponse(page, size, totalPages, totalItems, serverInfos)
     }

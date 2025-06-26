@@ -13,77 +13,77 @@ import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import com.mongodb.kotlin.client.coroutine.FindFlow
 import pl.cuyer.thedome.util.SimpleFindPublisher
 
-class FavoritesServiceTest {
+class FavouritesServiceTest {
     @Test
-    fun `addFavorite pushes server id`() = runBlocking {
+    fun `addFavourite pushes server id`() = runBlocking {
         val users = mockk<MongoCollection<User>>(relaxed = true)
         val servers = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
-        val user = User(username = "user", email = null, passwordHash = "", favorites = emptyList(), subscriptions = emptyList())
+        val user = User(username = "user", email = null, passwordHash = "", favourites = emptyList(), subscriptions = emptyList())
         val slotUpdate = slot<Bson>()
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = FavoritesService(users, servers, 3)
+        val service = FavouritesService(users, servers, 3)
 
-        val result = service.addFavorite("user", "1")
+        val result = service.addFavourite("user", "1")
 
         assertTrue(result)
         assertTrue(slotUpdate.captured.toString().contains("1"))
     }
 
     @Test
-    fun `addFavorite respects limit`() = runBlocking {
+    fun `addFavourite respects limit`() = runBlocking {
         val users = mockk<MongoCollection<User>>(relaxed = true)
         val servers = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
-        val user = User(username = "user", email = null, passwordHash = "", favorites = listOf("1", "2", "3"), subscriptions = emptyList())
+        val user = User(username = "user", email = null, passwordHash = "", favourites = listOf("1", "2", "3"), subscriptions = emptyList())
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
-        val service = FavoritesService(users, servers, 3)
+        val service = FavouritesService(users, servers, 3)
 
-        val result = service.addFavorite("user", "4")
+        val result = service.addFavourite("user", "4")
 
         assertFalse(result)
     }
 
     @Test
-    fun `addFavorite ignores limit for subscriber`() = runBlocking {
+    fun `addFavourite ignores limit for subscriber`() = runBlocking {
         val users = mockk<MongoCollection<User>>(relaxed = true)
         val servers = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
         val slotUpdate = slot<Bson>()
-        val user = User(username = "user", email = null, passwordHash = "", favorites = listOf("1", "2", "3"), subscriber = true, subscriptions = emptyList())
+        val user = User(username = "user", email = null, passwordHash = "", favourites = listOf("1", "2", "3"), subscriber = true, subscriptions = emptyList())
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = FavoritesService(users, servers, 3)
+        val service = FavouritesService(users, servers, 3)
 
-        val result = service.addFavorite("user", "4")
+        val result = service.addFavourite("user", "4")
 
         assertTrue(result)
         assertTrue(slotUpdate.captured.toString().contains("4"))
     }
 
     @Test
-    fun `removeFavorite pulls server id`() = runBlocking {
+    fun `removeFavourite pulls server id`() = runBlocking {
         val users = mockk<MongoCollection<User>>(relaxed = true)
         val servers = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
-        val user = User(username = "user", email = null, passwordHash = "", favorites = listOf("1"), subscriptions = emptyList())
+        val user = User(username = "user", email = null, passwordHash = "", favourites = listOf("1"), subscriptions = emptyList())
         val slotUpdate = slot<Bson>()
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = FavoritesService(users, servers, 3)
+        val service = FavouritesService(users, servers, 3)
 
-        val result = service.removeFavorite("user", "1")
+        val result = service.removeFavourite("user", "1")
 
         assertTrue(result)
         assertTrue(slotUpdate.captured.toString().contains("1"))
     }
 
     @Test
-    fun `removeFavorite returns false when missing`() = runBlocking {
+    fun `removeFavourite returns false when missing`() = runBlocking {
         val users = mockk<MongoCollection<User>>(relaxed = true)
         val servers = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
-        val user = User(username = "user", email = null, passwordHash = "", favorites = emptyList(), subscriptions = emptyList())
+        val user = User(username = "user", email = null, passwordHash = "", favourites = emptyList(), subscriptions = emptyList())
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
-        val service = FavoritesService(users, servers, 3)
+        val service = FavouritesService(users, servers, 3)
 
-        val result = service.removeFavorite("user", "1")
+        val result = service.removeFavourite("user", "1")
 
         assertFalse(result)
     }

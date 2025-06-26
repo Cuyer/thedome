@@ -4,8 +4,8 @@ import io.ktor.resources.Resource
 import kotlinx.serialization.Serializable
 
 @Serializable
-@Resource("/favorites")
-data class Favorites(
+@Resource("/favourites")
+data class Favourites(
     val page: Int? = null,
     val size: Int? = null
 )

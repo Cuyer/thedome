@@ -39,13 +39,13 @@ import pl.cuyer.thedome.services.ServerCleanupService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
-import pl.cuyer.thedome.services.FavoritesService
+import pl.cuyer.thedome.services.FavouritesService
 import pl.cuyer.thedome.services.SubscriptionsService
 import pl.cuyer.thedome.services.FcmService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
 import pl.cuyer.thedome.routes.AuthEndpoint
-import pl.cuyer.thedome.routes.FavoritesEndpoint
+import pl.cuyer.thedome.routes.FavouritesEndpoint
 import pl.cuyer.thedome.routes.SubscriptionsEndpoint
 import io.ktor.server.plugins.ratelimit.*
 import kotlin.time.Duration.Companion.seconds
@@ -62,7 +62,7 @@ import pl.cuyer.thedome.exceptions.InvalidRefreshTokenException
 import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
 import pl.cuyer.thedome.exceptions.FiltersOptionsException
 import pl.cuyer.thedome.exceptions.ServersQueryException
-import pl.cuyer.thedome.exceptions.FavoriteLimitException
+import pl.cuyer.thedome.exceptions.FavouriteLimitException
 import pl.cuyer.thedome.exceptions.SubscriptionLimitException
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
@@ -109,7 +109,7 @@ fun Application.module() {
             logException(call, cause)
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error", cause::class.simpleName))
         }
-        exception<FavoriteLimitException> { call, cause ->
+        exception<FavouriteLimitException> { call, cause ->
             logException(call, cause)
             call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
         }
@@ -238,12 +238,12 @@ fun Application.module() {
     val serversService by inject<ServersService>()
     val filtersService by inject<FiltersService>()
     val authService by inject<AuthService>()
-    val favoritesService by inject<FavoritesService>()
+    val favouritesService by inject<FavouritesService>()
     val subscriptionsService by inject<SubscriptionsService>()
-    val serversEndpoint = ServersEndpoint(serversService, favoritesService, subscriptionsService)
+    val serversEndpoint = ServersEndpoint(serversService, favouritesService, subscriptionsService)
     val filtersEndpoint = FiltersEndpoint(filtersService)
     val authEndpoint = AuthEndpoint(authService)
-    val favoritesEndpoint = FavoritesEndpoint(favoritesService)
+    val favouritesEndpoint = FavouritesEndpoint(favouritesService)
     val subscriptionsEndpoint = SubscriptionsEndpoint(subscriptionsService)
 
     routing {
@@ -261,7 +261,7 @@ fun Application.module() {
             }
             serversEndpoint.register(this)
             filtersEndpoint.register(this)
-            favoritesEndpoint.register(this)
+            favouritesEndpoint.register(this)
             subscriptionsEndpoint.register(this)
         }
         get("/metrics") { call.respondText(metricsRegistry.scrape()) }
