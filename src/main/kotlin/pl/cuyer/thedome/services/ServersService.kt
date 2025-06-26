@@ -10,6 +10,7 @@ import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
 import pl.cuyer.thedome.domain.server.Order
 import pl.cuyer.thedome.domain.server.ServerInfo
 import pl.cuyer.thedome.domain.server.ServersResponse
+import pl.cuyer.thedome.domain.server.ServerFilter
 import pl.cuyer.thedome.resources.Servers
 import java.util.regex.Pattern
 import org.slf4j.LoggerFactory
@@ -24,7 +25,15 @@ class ServersService(
         val size = params.size ?: 20
         val skip = (page - 1) * size
 
+        val favoritesList = favorites ?: emptyList()
+        val subList = subscriptions ?: emptyList()
+
         val filters = mutableListOf<Bson>()
+        when (params.filter) {
+            ServerFilter.FAVORITES -> filters += Filters.`in`("id", favoritesList)
+            ServerFilter.SUBSCRIBED -> filters += Filters.`in`("id", subList)
+            else -> {}
+        }
         params.map?.let {
             val pattern = Pattern.compile(it.name.replace('_', ' '), Pattern.CASE_INSENSITIVE)
             filters += Filters.regex("attributes.details.map", pattern)
@@ -74,9 +83,6 @@ class ServersService(
             .toList()
             .map { it.toServerInfo() }
             .filter { params.wipeSchedule == null || it.wipeSchedule == params.wipeSchedule }
-
-        val favoritesList = favorites ?: emptyList()
-        val subList = subscriptions ?: emptyList()
 
         val enriched = serverInfos.map { info ->
             val fav = info.id?.toString()?.let { favoritesList.contains(it) } ?: false

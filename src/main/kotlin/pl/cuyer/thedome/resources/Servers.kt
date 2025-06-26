@@ -8,6 +8,7 @@ import pl.cuyer.thedome.domain.server.Maps
 import pl.cuyer.thedome.domain.server.Region
 import pl.cuyer.thedome.domain.server.WipeSchedule
 import pl.cuyer.thedome.domain.server.Order
+import pl.cuyer.thedome.domain.server.ServerFilter
 
 @Serializable
 @Resource("/servers")
@@ -25,5 +26,6 @@ data class Servers(
     val playerCount: Int? = null,
     val groupLimit: Int? = null,
     val order: Order? = null,
+    val filter: ServerFilter? = null,
     val name: String? = null
 )
