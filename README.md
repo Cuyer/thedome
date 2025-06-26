@@ -26,7 +26,7 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 - `ALLOWED_ORIGINS` – comma-separated list of allowed CORS origins (useful in production)
 - `ANON_RATE_LIMIT` – requests per minute allowed for anonymous users (default `60`)
 - `ANON_REFILL_PERIOD` – seconds per anonymous rate limit window (default `60`)
-- `FAVORITES_LIMIT` – maximum favourites for non-subscribers and anonymous users (default `10`)
+- `FAVOURITES_LIMIT` – maximum favourites for non-subscribers and anonymous users (default `10`)
 - `SUBSCRIPTIONS_LIMIT` – maximum subscriptions for non-subscribers and anonymous users (default `10`)
 - `TOKEN_VALIDITY` – access token lifetime in seconds (default `3600`)
 - `ANON_TOKEN_VALIDITY` – anonymous token lifetime in seconds (default `3600`)
@@ -124,8 +124,8 @@ and anonymous users may only store up to `FAVORITES_LIMIT` servers.
 
 ```
 GET    /favorites            # list favourite servers (paged)
-POST   /favorites/{id}       # add server to favourites
-DELETE /favorites/{id}       # remove server from favourites
+POST   /favourites/{id}       # add server to favourites
+DELETE /favourites/{id}       # remove server from favourites
 ```
 
 ## Subscriptions
