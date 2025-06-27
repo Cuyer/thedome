@@ -200,6 +200,32 @@ paths:
         '401':
           description: Invalid refresh token
 
+  /fcm/token:
+    post:
+      summary: Register FCM token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FcmTokenRequest'
+      responses:
+        '201':
+          description: Token registered
+
+  /fcm/token/{token}:
+    delete:
+      summary: Delete FCM token
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Token removed
+
 components:
   schemas:
     ServerInfo:
@@ -365,6 +391,13 @@ components:
         accessToken:
           type: string
         username:
+          type: string
+    FcmTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        timestamp:
           type: string
     UpgradeRequest:
       type: object

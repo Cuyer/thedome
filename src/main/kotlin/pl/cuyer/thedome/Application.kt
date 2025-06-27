@@ -42,11 +42,13 @@ import pl.cuyer.thedome.services.AuthService
 import pl.cuyer.thedome.services.FavouritesService
 import pl.cuyer.thedome.services.SubscriptionsService
 import pl.cuyer.thedome.services.FcmService
+import pl.cuyer.thedome.services.FcmTokenService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
 import pl.cuyer.thedome.routes.AuthEndpoint
 import pl.cuyer.thedome.routes.FavouritesEndpoint
 import pl.cuyer.thedome.routes.SubscriptionsEndpoint
+import pl.cuyer.thedome.routes.FcmTokenEndpoint
 import io.ktor.server.plugins.ratelimit.*
 import kotlin.time.Duration.Companion.seconds
 import org.koin.ktor.plugin.Koin
@@ -193,6 +195,7 @@ fun Application.module() {
     val fetchService by inject<ServerFetchService>()
     val cleanupService by inject<ServerCleanupService>()
     val fcmService by inject<FcmService>()
+    val fcmTokenService by inject<FcmTokenService>()
     val schedulerClient by inject<MongoClient>()
     logger.info("Scheduling fetch task with cron expression '${config.fetchCron}'")
     logger.info("Scheduling cleanup task with cron expression '${config.cleanupCron}'")
@@ -211,6 +214,16 @@ fun Application.module() {
             name = "cleanup-servers"
             kronSchedule = { applyCron(config.cleanupCron) }
             task = { cleanupService.cleanupOldServers() }
+        }
+        task {
+            name = "cleanup-tokens"
+            kronSchedule = { applyCron(config.cleanupCron) }
+            task = { fcmTokenService.removeStaleTokens() }
+        }
+        task {
+            name = "resubscribe-topics"
+            kronSchedule = { applyCron(config.resubscribeCron) }
+            task = { fcmTokenService.resubscribeTokens() }
         }
         task {
             name = "notify-wipes"
@@ -245,6 +258,7 @@ fun Application.module() {
     val authEndpoint = AuthEndpoint(authService)
     val favouritesEndpoint = FavouritesEndpoint(favouritesService)
     val subscriptionsEndpoint = SubscriptionsEndpoint(subscriptionsService)
+    val fcmTokenEndpoint = FcmTokenEndpoint(fcmTokenService)
 
     routing {
         authEndpoint.register(this)
@@ -263,6 +277,7 @@ fun Application.module() {
             filtersEndpoint.register(this)
             favouritesEndpoint.register(this)
             subscriptionsEndpoint.register(this)
+            fcmTokenEndpoint.register(this)
         }
         get("/metrics") { call.respondText(metricsRegistry.scrape()) }
         swaggerUI(path = "swagger")

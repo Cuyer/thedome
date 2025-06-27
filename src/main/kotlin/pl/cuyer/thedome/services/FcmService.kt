@@ -2,6 +2,8 @@ package pl.cuyer.thedome.services
 
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
+import com.google.firebase.messaging.FirebaseMessagingException
+import com.google.firebase.messaging.MessagingErrorCode
 import com.google.auth.oauth2.GoogleCredentials
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -12,13 +14,17 @@ import com.mongodb.client.model.Filters
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.services.NotificationType
+import pl.cuyer.thedome.domain.auth.User
+import pl.cuyer.thedome.services.FcmTokenService
 
 class FcmService(
     private val messaging: FirebaseMessaging,
     private val servers: MongoCollection<BattlemetricsServerContent>,
     private val notifyBeforeWipe: List<Int>,
     private val notifyBeforeMapWipe: List<Int>,
-    private val credentials: GoogleCredentials
+    private val credentials: GoogleCredentials,
+    private val users: MongoCollection<User>,
+    private val tokenService: FcmTokenService
 ) {
     private val logger = LoggerFactory.getLogger(FcmService::class.java)
 
@@ -66,22 +72,32 @@ class FcmService(
             val timestamp = if (mapDue) mapWipe else wipe
             val name = server.attributes.name
             if (timestamp != null && name != null) {
-                sendToTopic(id, name, type, timestamp)
+                val subscribers = users.find(Filters.eq("subscriptions", id)).toList()
+                for (user in subscribers) {
+                    for (token in user.fcmTokens) {
+                        sendToToken(user.username, token.token, name, type, timestamp)
+                    }
+                }
             }
         }
     }
 
-    private fun sendToTopic(topic: String, name: String, type: NotificationType, timestamp: String) {
-        logger.info("Sending notification to topic '{}'", topic)
+    private suspend fun sendToToken(username: String, token: String, name: String, type: NotificationType, timestamp: String) {
+        logger.info("Sending notification to token '{}'", token)
         val message = Message.builder()
-            .setTopic(topic)
+            .setToken(token)
             .putData("name", name)
             .putData("type", type.name)
             .putData("timestamp", timestamp)
             .build()
         try {
             credentials.refreshIfExpired()
-            messaging.sendAsync(message)
+            messaging.send(message)
+        } catch (e: FirebaseMessagingException) {
+            if (e.messagingErrorCode == MessagingErrorCode.UNREGISTERED || e.messagingErrorCode == MessagingErrorCode.INVALID_ARGUMENT) {
+                tokenService.removeToken(username, token)
+            }
+            logger.warn("FCM error ${e.message}")
         } catch (e: Exception) {
             logger.warn("FCM error ${e.message}")
         }
