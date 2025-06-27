@@ -27,6 +27,7 @@ import pl.cuyer.thedome.services.FiltersService
 import pl.cuyer.thedome.services.AuthService
 import pl.cuyer.thedome.services.FavouritesService
 import pl.cuyer.thedome.services.SubscriptionsService
+import pl.cuyer.thedome.services.FcmTokenService
 import pl.cuyer.thedome.services.FcmService
 import pl.cuyer.thedome.AppConfig
 import com.google.firebase.FirebaseApp
@@ -127,13 +128,16 @@ fun appModule(config: AppConfig) = module {
         )
     }
     single { FavouritesService(get(named("users")), get(named("servers")), config.favouritesLimit) }
-    single { SubscriptionsService(get(named("users")), config.subscriptionsLimit) }
+    single { SubscriptionsService(get(named("users")), config.subscriptionsLimit, get()) }
+    single { FcmTokenService(get(named("users")), get()) }
     single {
         FcmService(
             get(),
             get(named("servers")),
             config.notifyBeforeWipe,
             config.notifyBeforeMapWipe,
+            get(),
+            get(named("users")),
             get()
         )
     }

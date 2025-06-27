@@ -16,5 +16,7 @@ data class User(
     val refreshToken: String? = null,
     val subscriber: Boolean = false,
     val favourites: List<String> = emptyList(),
-    val subscriptions: List<String> = emptyList()
+    val subscriptions: List<String> = emptyList(),
+    val fcmTokens: List<FcmToken> = emptyList()
 )
+
