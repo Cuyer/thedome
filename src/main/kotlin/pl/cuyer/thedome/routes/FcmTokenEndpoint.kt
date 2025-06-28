@@ -19,7 +19,7 @@ class FcmTokenEndpoint(private val service: FcmTokenService) {
                     val principal = call.principal<JWTPrincipal>()!!
                     val username = principal.getClaim("username", String::class)!!
                     val req = call.receive<FcmTokenRequest>()
-                    service.registerToken(username, req.token, req.timestamp)
+                    service.registerToken(username, req.token)
                     call.respond(HttpStatusCode.Created)
                 }
                 delete("/fcm/token/{token}") {
