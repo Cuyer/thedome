@@ -3,7 +3,6 @@ package pl.cuyer.thedome.services
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.FirebaseMessagingException
-import com.google.firebase.messaging.MessagingErrorCode
 import com.google.auth.oauth2.GoogleCredentials
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -73,19 +72,17 @@ class FcmService(
             val name = server.attributes.name
             if (timestamp != null && name != null) {
                 val subscribers = users.find(Filters.eq("subscriptions", id)).toList()
-                for (user in subscribers) {
-                    for (token in user.fcmTokens) {
-                        sendToToken(user.username, token.token, name, type, timestamp)
-                    }
+                if (subscribers.isNotEmpty()) {
+                    sendToTopic(id, name, type, timestamp)
                 }
             }
         }
     }
 
-    private suspend fun sendToToken(username: String, token: String, name: String, type: NotificationType, timestamp: String) {
-        logger.info("Sending notification to token '{}'", token)
+    private suspend fun sendToTopic(topic: String, name: String, type: NotificationType, timestamp: String) {
+        logger.info("Sending notification to topic '{}'", topic)
         val message = Message.builder()
-            .setToken(token)
+            .setTopic(topic)
             .putData("name", name)
             .putData("type", type.name)
             .putData("timestamp", timestamp)
@@ -93,13 +90,12 @@ class FcmService(
         try {
             credentials.refreshIfExpired()
             messaging.send(message)
-        } catch (e: FirebaseMessagingException) {
-            if (e.messagingErrorCode == MessagingErrorCode.UNREGISTERED || e.messagingErrorCode == MessagingErrorCode.INVALID_ARGUMENT) {
-                tokenService.removeToken(username, token)
-            }
-            logger.warn("FCM error ${e.message}")
         } catch (e: Exception) {
-            logger.warn("FCM error ${e.message}")
+            if (e is FirebaseMessagingException) {
+                logger.warn("FCM error ${e.message}")
+            } else {
+                logger.warn("FCM error ${e.message}")
+            }
         }
     }
 }
