@@ -33,9 +33,7 @@ class ServerFetchService(
 
         try {
             while (url != null) {
-                logger.info("Requesting page: $url")
                 val page: BattlemetricsPage = client.get(url).body()
-                logger.info("Received ${page.data.size} servers")
 
                 val pageServers = coroutineScope {
                     page.data.map { server ->
