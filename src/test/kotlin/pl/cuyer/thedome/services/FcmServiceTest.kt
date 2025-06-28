@@ -3,7 +3,6 @@ package pl.cuyer.thedome.services
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.FirebaseMessagingException
-import com.google.firebase.messaging.MessagingErrorCode
 import com.google.auth.oauth2.GoogleCredentials
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import com.mongodb.kotlin.client.coroutine.FindFlow
@@ -56,7 +55,7 @@ class FcmServiceTest {
         verify { messaging.send(capture(captured)) }
         val message = captured.captured
         fun field(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
-        assertEquals("t1", field(message, "token"))
+        assertEquals("1", field(message, "topic"))
         assertEquals(null, field(message, "notification"))
         val data = field(message, "data") as Map<*, *>
         assertEquals("Test Server", data["name"])
@@ -65,9 +64,8 @@ class FcmServiceTest {
     }
 
     @Test
-    fun `invalid token is removed`() = runBlocking {
+    fun `send failure does not remove token`() = runBlocking {
         val exception = mockk<FirebaseMessagingException>()
-        every { exception.messagingErrorCode } returns MessagingErrorCode.UNREGISTERED
         every { exception.message } returns "error"
         val messaging = mockk<FirebaseMessaging>()
         every { messaging.send(any()) } throws exception
@@ -91,6 +89,6 @@ class FcmServiceTest {
         val service = FcmService(messaging, serverColl, listOf(1), emptyList(), credentials, usersColl, tokenService)
         service.checkAndSend()
 
-        coVerify { tokenService.removeToken("user", "t1") }
+        coVerify(exactly = 0) { tokenService.removeToken(any(), any()) }
     }
 }

@@ -11,6 +11,8 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.plus
 import kotlin.time.Duration.Companion.days
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.FirebaseMessagingException
+import com.google.firebase.messaging.MessagingErrorCode
 import pl.cuyer.thedome.domain.auth.FcmToken
 import pl.cuyer.thedome.domain.auth.User
 
@@ -28,7 +30,13 @@ class FcmTokenService(
             for (topic in user.subscriptions) {
                 try {
                     messaging.subscribeToTopic(listOf(token), topic)
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    if (e is FirebaseMessagingException &&
+                        (e.messagingErrorCode == MessagingErrorCode.UNREGISTERED ||
+                            e.messagingErrorCode == MessagingErrorCode.INVALID_ARGUMENT)) {
+                        removeToken(username, token)
+                    }
+                }
             }
         }
     }
@@ -41,7 +49,13 @@ class FcmTokenService(
             for (topic in user.subscriptions) {
                 try {
                     messaging.unsubscribeFromTopic(listOf(token), topic)
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    if (e is FirebaseMessagingException &&
+                        (e.messagingErrorCode == MessagingErrorCode.UNREGISTERED ||
+                            e.messagingErrorCode == MessagingErrorCode.INVALID_ARGUMENT)) {
+                        // token already invalid, ignore
+                    }
+                }
             }
         }
     }
