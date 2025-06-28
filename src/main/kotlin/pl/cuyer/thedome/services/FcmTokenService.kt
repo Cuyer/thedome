@@ -18,10 +18,11 @@ class FcmTokenService(
     private val users: MongoCollection<User>,
     private val messaging: FirebaseMessaging
 ) {
-    suspend fun registerToken(username: String, token: String, timestamp: String) {
+    suspend fun registerToken(username: String, token: String) {
         val user = users.find(eq(User::username, username)).firstOrNull() ?: return
         val exists = user.fcmTokens.any { it.token == token }
-        val newTokens = user.fcmTokens.filter { it.token != token } + FcmToken(token, timestamp)
+        val newTokens = user.fcmTokens.filter { it.token != token } +
+            FcmToken(token, Clock.System.now().toString())
         users.updateOne(eq(User::username, username), set(User::fcmTokens, newTokens))
         if (!exists && user.subscriptions.isNotEmpty()) {
             for (topic in user.subscriptions) {

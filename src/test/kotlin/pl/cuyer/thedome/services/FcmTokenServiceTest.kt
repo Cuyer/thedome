@@ -25,7 +25,7 @@ class FcmTokenServiceTest {
         coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
         val service = FcmTokenService(users, messaging)
 
-        service.registerToken("user", "token1", "ts")
+        service.registerToken("user", "token1")
 
         assertTrue(slotUpdate.captured.toString().contains("token1"))
         verify { messaging.subscribeToTopic(listOf("token1"), "s1") }
