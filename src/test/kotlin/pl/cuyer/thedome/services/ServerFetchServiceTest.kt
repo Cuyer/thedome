@@ -13,18 +13,21 @@ import kotlinx.serialization.json.Json
 import io.mockk.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.days
 import com.mongodb.client.model.BulkWriteOptions
-import com.mongodb.client.model.DeleteOptions
 import com.mongodb.client.model.ReplaceOneModel
 import org.bson.conversions.Bson
-import org.litote.kmongo.coroutine.CoroutineCollection
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.coroutine.FindFlow
+import pl.cuyer.thedome.util.SimpleFindPublisher
 import pl.cuyer.thedome.domain.battlemetrics.*
 
 class ServerFetchServiceTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
-    fun `fetchServers upserts and removes`() = runBlocking {
+    fun `fetchServers upserts`() = runBlocking {
         val server1 = BattlemetricsServerContent(attributes = Attributes(id = "a1"), id = "1")
         val server2 = BattlemetricsServerContent(attributes = Attributes(id = "a2"), id = "2")
         val page = BattlemetricsPage(data = listOf(server1, server2), links = Links(null))
@@ -38,18 +41,98 @@ class ServerFetchServiceTest {
         }
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
 
-        val collection = mockk<CoroutineCollection<BattlemetricsServerContent>>()
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(emptyList()))
         val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
-        val slotFilter = slot<Bson>()
         coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
-        coEvery { collection.deleteMany(capture(slotFilter)) } returns mockk()
 
-        val service = ServerFetchService(client, collection)
+        val service = ServerFetchService(client, collection, "")
         service.fetchServers()
 
         assertEquals(2, slotOps.captured.size)
         val ids = slotOps.captured.map { it.replacement.id }.toSet()
         assertEquals(setOf("1", "2"), ids)
-        coVerify(exactly = 1) { collection.deleteMany(any<Bson>(), any<DeleteOptions>()) }
+        coVerify(exactly = 0) { collection.deleteMany(any<Bson>(), any()) }
+    }
+
+    @Test
+    fun `fetchServers only updates newer data`() = runBlocking {
+        val now = Clock.System.now()
+        val new1 = BattlemetricsServerContent(
+            attributes = Attributes(id = "a1", updatedAt = (now - 1.days).toString()),
+            id = "1"
+        )
+        val new2 = BattlemetricsServerContent(
+            attributes = Attributes(id = "a2", updatedAt = (now - 2.days).toString()),
+            id = "2"
+        )
+        val page = BattlemetricsPage(data = listOf(new1, new2), links = Links(null))
+
+        val engine = MockEngine {
+            respond(
+                content = ByteReadChannel(json.encodeToString(page)),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
+
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
+        val existing1 = BattlemetricsServerContent(
+            attributes = Attributes(id = "a1", updatedAt = (now - 2.days).toString()),
+            id = "1"
+        )
+        val existing2 = BattlemetricsServerContent(
+            attributes = Attributes(id = "a2", updatedAt = (now - 1.days).toString()),
+            id = "2"
+        )
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(existing1, existing2)))
+
+        val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
+        coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
+
+        val service = ServerFetchService(client, collection, "")
+        service.fetchServers()
+
+        assertEquals(1, slotOps.captured.size)
+        assertEquals("1", slotOps.captured.first().replacement.id)
+        coVerify(exactly = 0) { collection.deleteMany(any<Bson>(), any()) }
+    }
+
+    @Test
+    fun `fetchServers includes outdated servers`() = runBlocking {
+        val now = Clock.System.now()
+        val recent = BattlemetricsServerContent(
+            attributes = Attributes(id = "a1", updatedAt = (now - 1.days).toString()),
+            id = "1"
+        )
+        val outdated = BattlemetricsServerContent(
+            attributes = Attributes(id = "a2", updatedAt = (now - 61.days).toString()),
+            id = "2"
+        )
+        val page = BattlemetricsPage(data = listOf(recent, outdated), links = Links(null))
+
+        val engine = MockEngine {
+            respond(
+                content = ByteReadChannel(json.encodeToString(page)),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
+
+        val collection = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(emptyList()))
+
+        val slotOps = slot<List<ReplaceOneModel<BattlemetricsServerContent>>>()
+        coEvery { collection.bulkWrite(capture(slotOps), any<BulkWriteOptions>()) } returns mockk()
+
+        val service = ServerFetchService(client, collection, "")
+        service.fetchServers()
+
+        assertEquals(2, slotOps.captured.size)
+        val ids = slotOps.captured.map { it.replacement.id }.toSet()
+        assertEquals(setOf("1", "2"), ids)
+        coVerify(exactly = 0) { collection.deleteMany(any<Bson>(), any()) }
     }
 }

@@ -62,7 +62,7 @@ class ServerExtensionsAdditionalTest {
         val rustMaps = RustMaps(
             thumbnailUrl = "https://example.com/maps/abc/thumbnail.png",
             imageIconUrl = "icon.png",
-            mapUrl = "https://example.com/map",
+            url = "https://example.com/map",
             seed = 123L,
             size = 4000,
             monumentCount = 12
@@ -70,6 +70,8 @@ class ServerExtensionsAdditionalTest {
         val details = Details(
             map = "Procedural Map",
             rustLastWipe = "2024-01-01T00:00:00Z",
+            rustNextWipe = "2024-01-02T00:00:00Z",
+            rustNextWipeMap = "2024-01-03T00:00:00Z",
             rustType = "modded",
             rustGamemode = "vanilla",
             rustSettings = settings,
@@ -101,6 +103,8 @@ class ServerExtensionsAdditionalTest {
         assertEquals(1L, info.id)
         assertEquals("Test", info.name)
         assertEquals(Instant.parse("2024-01-01T00:00:00Z"), info.wipe)
+        assertEquals(Instant.parse("2024-01-02T00:00:00Z"), info.nextWipe)
+        assertEquals(Instant.parse("2024-01-03T00:00:00Z"), info.nextMapWipe)
         assertEquals(1, info.ranking)
         assertEquals(true, info.modded)
         assertEquals(10L, info.playerCount)
