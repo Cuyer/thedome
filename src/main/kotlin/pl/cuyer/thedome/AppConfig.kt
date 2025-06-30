@@ -13,6 +13,7 @@ data class AppConfig(
     val resubscribeCron: String,
     val mongoUri: String,
     val apiKey: String,
+    val googleClientId: String,
     val anonRateLimit: Int,
     val anonRefillPeriod: Int,
     val favouritesLimit: Int,
@@ -37,6 +38,7 @@ data class AppConfig(
             val resubscribeCron = section.propertyOrNull("resubscribeCron")?.getString() ?: "0 0 1 * *"
             val mongoUri = section.propertyOrNull("mongoUri")?.getString() ?: "mongodb://localhost:27017"
             val apiKey = section.propertyOrNull("apiKey")?.getString() ?: ""
+            val googleClientId = section.propertyOrNull("googleClientId")?.getString() ?: ""
             val anonRateLimit = section.propertyOrNull("anonRateLimit")?.getString()?.toIntOrNull() ?: 60
             val anonRefillPeriod = section.propertyOrNull("anonRefillPeriod")?.getString()?.toIntOrNull() ?: 60
             val favouritesLimit = section.propertyOrNull("favouritesLimit")?.getString()?.toIntOrNull() ?: 10
@@ -65,6 +67,7 @@ data class AppConfig(
                 resubscribeCron,
                 mongoUri,
                 apiKey,
+                googleClientId,
                 anonRateLimit,
                 anonRefillPeriod,
                 favouritesLimit,

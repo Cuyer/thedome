@@ -12,6 +12,7 @@ data class User(
     val id: ObjectId? = null,
     val username: String,
     val email: String? = null,
+    val googleId: String? = null,
     val passwordHash: String,
     val refreshToken: String? = null,
     val subscriber: Boolean = false,

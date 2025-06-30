@@ -14,6 +14,7 @@ import pl.cuyer.thedome.domain.auth.LoginRequest
 import pl.cuyer.thedome.domain.auth.RegisterRequest
 import pl.cuyer.thedome.domain.auth.RefreshRequest
 import pl.cuyer.thedome.domain.auth.UpgradeRequest
+import pl.cuyer.thedome.domain.auth.GoogleAuthRequest
 import pl.cuyer.thedome.domain.auth.DeleteAccountRequest
 import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
 import pl.cuyer.thedome.exceptions.InvalidCredentialsException
@@ -47,6 +48,12 @@ class AuthEndpoint(private val service: AuthService) {
                 post("/login") {
                     val req = call.receive<LoginRequest>()
                     val tokens = service.login(req.username, req.password)
+                        ?: throw InvalidCredentialsException()
+                    call.respond(tokens)
+                }
+                post("/google") {
+                    val req = call.receive<GoogleAuthRequest>()
+                    val tokens = service.loginWithGoogle(req.token)
                         ?: throw InvalidCredentialsException()
                     call.respond(tokens)
                 }
