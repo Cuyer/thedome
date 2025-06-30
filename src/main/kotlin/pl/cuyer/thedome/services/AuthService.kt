@@ -11,6 +11,7 @@ import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.domain.auth.TokenPair
 import pl.cuyer.thedome.domain.auth.AccessToken
 import pl.cuyer.thedome.domain.auth.GoogleTokenInfo
+import pl.cuyer.thedome.domain.auth.AuthProvider
 import pl.cuyer.thedome.services.FcmTokenService
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -50,10 +51,23 @@ class AuthService(
         val hash = BCrypt.hashpw(password, BCrypt.gensalt())
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
-        val user = User(username = username, email = email, passwordHash = hash, refreshToken = hashedRefresh)
+        val user = User(
+            username = username,
+            email = email,
+            googleId = null,
+            provider = AuthProvider.LOCAL,
+            passwordHash = hash,
+            refreshToken = hashedRefresh
+        )
         collection.insertOne(user)
         logger.info("User $username registered")
-        return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, username, email)
+        return TokenPair(
+            generateAccessToken(user, tokenValidityMs),
+            refresh,
+            username,
+            email,
+            AuthProvider.LOCAL
+        )
     }
 
     suspend fun registerAnonymous(): AccessToken {
@@ -62,13 +76,20 @@ class AuthService(
         val expires = Clock.System.now() + anonTokenValidityMs.milliseconds
         val user = User(
             username = username,
+            email = null,
+            googleId = null,
+            provider = AuthProvider.ANONYMOUS,
             passwordHash = "",
             refreshToken = null,
             testEndsAt = expires.toString()
         )
         collection.insertOne(user)
         logger.info("Anonymous user $username registered")
-        return AccessToken(generateAccessToken(user, anonTokenValidityMs), username)
+        return AccessToken(
+            generateAccessToken(user, anonTokenValidityMs),
+            username,
+            AuthProvider.ANONYMOUS
+        )
     }
 
     suspend fun upgradeAnonymous(currentUsername: String, newUsername: String, password: String): TokenPair? {
@@ -82,9 +103,16 @@ class AuthService(
         collection.updateOne(eq(User::username, currentUsername), set(User::username, newUsername))
         collection.updateOne(eq(User::username, newUsername), set(User::passwordHash, hash))
         collection.updateOne(eq(User::username, newUsername), set(User::refreshToken, hashedRefresh))
+        collection.updateOne(eq(User::username, newUsername), set(User::provider, AuthProvider.LOCAL))
         logger.info("Anonymous user $currentUsername upgraded to $newUsername")
         val updated = collection.find(eq(User::username, newUsername)).firstOrNull() ?: return null
-        return TokenPair(generateAccessToken(updated, tokenValidityMs), refresh, newUsername, updated.email)
+        return TokenPair(
+            generateAccessToken(updated, tokenValidityMs),
+            refresh,
+            newUsername,
+            updated.email,
+            AuthProvider.LOCAL
+        )
     }
 
     suspend fun login(username: String, password: String): TokenPair? {
@@ -96,7 +124,13 @@ class AuthService(
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
         tokenService.resubscribeUserTokens(user.username)
         logger.info("User ${user.username} logged in")
-        return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, user.username, user.email)
+        return TokenPair(
+            generateAccessToken(user, tokenValidityMs),
+            refresh,
+            user.username,
+            user.email,
+            user.provider
+        )
     }
 
     suspend fun loginWithGoogle(token: String): TokenPair? {
@@ -111,25 +145,32 @@ class AuthService(
         var user = collection.find(eq(User::googleId, googleId)).firstOrNull()
         if (user == null) {
             val email = info.email
-            val base = email?.substringBefore("@") ?: "google-$googleId"
-            var name = base
-            var i = 1
-            while (collection.find(eq(User::username, name)).firstOrNull() != null) {
-                name = "$base$i"
-                i++
-            }
-            user = User(username = name, email = email, googleId = googleId, passwordHash = "")
+            val name = email?.substringBefore("@") ?: "google-$googleId"
+            user = User(
+                username = name,
+                email = email,
+                googleId = googleId,
+                provider = AuthProvider.GOOGLE,
+                passwordHash = ""
+            )
             collection.insertOne(user)
         } else if (user.googleId == null) {
             collection.updateOne(eq(User::username, user.username), set(User::googleId, googleId))
-            user = user.copy(googleId = googleId)
+            collection.updateOne(eq(User::username, user.username), set(User::provider, AuthProvider.GOOGLE))
+            user = user.copy(googleId = googleId, provider = AuthProvider.GOOGLE)
         }
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
         tokenService.resubscribeUserTokens(user.username)
         logger.info("User ${user.username} logged in via Google")
-        return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, user.username, user.email)
+        return TokenPair(
+            generateAccessToken(user, tokenValidityMs),
+            refresh,
+            user.username,
+            user.email,
+            AuthProvider.GOOGLE
+        )
     }
 
     suspend fun refresh(refreshToken: String): TokenPair? {
@@ -140,7 +181,13 @@ class AuthService(
         val hashedNew = hashToken(newRefresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedNew))
         logger.info("Issued new refresh token for ${user.username}")
-        return TokenPair(generateAccessToken(user, tokenValidityMs), newRefresh, user.username, user.email)
+        return TokenPair(
+            generateAccessToken(user, tokenValidityMs),
+            newRefresh,
+            user.username,
+            user.email,
+            user.provider
+        )
     }
 
     suspend fun logout(username: String): Boolean {

@@ -2,6 +2,7 @@ package pl.cuyer.thedome.domain.auth
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import pl.cuyer.thedome.domain.auth.AuthProvider
 import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
 
@@ -13,6 +14,7 @@ data class User(
     val username: String,
     val email: String? = null,
     val googleId: String? = null,
+    val provider: AuthProvider = AuthProvider.LOCAL,
     val passwordHash: String,
     val refreshToken: String? = null,
     val testEndsAt: String? = null,
