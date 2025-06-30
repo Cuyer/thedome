@@ -25,6 +25,7 @@ class AuthService(
     private val tokenValidityMs: Long,
     private val anonTokenValidityMs: Long,
     private val tokenService: FcmTokenService
+    private val fcmTokenService: FcmTokenService
 ) {
     private val algorithm = Algorithm.HMAC256(jwtSecret)
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
@@ -79,6 +80,7 @@ class AuthService(
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
+        fcmTokenService.resubscribeUserTokens(user.username)
         logger.info("User ${user.username} logged in")
         return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, user.username, user.email)
     }

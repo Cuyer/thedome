@@ -5,7 +5,6 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import com.mongodb.kotlin.client.coroutine.MongoCollection
-import com.mongodb.kotlin.client.model.Filters.eq
 import org.bson.conversions.Bson
 import pl.cuyer.thedome.domain.auth.User
 import com.mongodb.client.model.InsertOneOptions
@@ -47,7 +46,6 @@ class AuthServiceTest {
         )
         coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
         val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, mockk(relaxed = true))
-
         val result = service.upgradeAnonymous("anon-123", "newuser", "pass")
 
         assertTrue(result?.accessToken?.isNotEmpty() == true)
@@ -74,6 +72,7 @@ class AuthServiceTest {
         assertTrue(result?.email == "user@example.com")
         val expected = hash(result!!.refreshToken)
         assertTrue(slotUpdate.captured.toString().contains(expected))
+        coVerify { tokenService.resubscribeUserTokens("user") }
     }
 
     @Test

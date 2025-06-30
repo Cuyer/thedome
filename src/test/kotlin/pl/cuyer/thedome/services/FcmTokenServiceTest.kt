@@ -123,5 +123,23 @@ class FcmTokenServiceTest {
 
         verify { messaging.subscribeToTopic(listOf("t1"), "s1") }
     }
+
+    @Test
+    fun `resubscribeUserTokens subscribes tokens for specific user`() = runBlocking {
+        val users = mockk<MongoCollection<User>>(relaxed = true)
+        val messaging = mockk<FirebaseMessaging>(relaxed = true)
+        val user = User(
+            username = "user",
+            passwordHash = "",
+            fcmTokens = listOf(FcmToken("t1", "ts")),
+            subscriptions = listOf("s1")
+        )
+        every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        val service = FcmTokenService(users, messaging)
+
+        service.resubscribeUserTokens("user")
+
+        verify { messaging.subscribeToTopic(listOf("t1"), "s1") }
+    }
 }
 

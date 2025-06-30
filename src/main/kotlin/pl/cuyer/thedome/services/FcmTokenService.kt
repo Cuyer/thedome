@@ -79,16 +79,21 @@ class FcmTokenService(
         }
     }
 
+    suspend fun resubscribeUserTokens(username: String) {
+        val user = users.find(eq(User::username, username)).firstOrNull() ?: return
+        if (user.subscriptions.isEmpty() || user.fcmTokens.isEmpty()) return
+        val tokens = user.fcmTokens.map { it.token }
+        for (topic in user.subscriptions) {
+            try {
+                messaging.subscribeToTopic(tokens, topic)
+            } catch (_: Exception) {}
+        }
+    }
+
     suspend fun resubscribeTokens() {
         val candidates = users.find(ne(User::fcmTokens, emptyList<FcmToken>())).toList()
         for (user in candidates) {
-            if (user.subscriptions.isEmpty()) continue
-            val tokens = user.fcmTokens.map { it.token }
-            for (topic in user.subscriptions) {
-                try {
-                    messaging.subscribeToTopic(tokens, topic)
-                } catch (_: Exception) {}
-            }
+            resubscribeUserTokens(user.username)
         }
     }
 }
