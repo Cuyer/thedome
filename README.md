@@ -91,7 +91,7 @@ curl -X POST http://localhost:8080/auth/login \
   -d '{"username":"user","password":"password"}'
 ```
 
-Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. When you register or log in, a `refreshToken` is also returned. Call `/auth/logout` with your access token to invalidate the session and remove all push notification tokens. To permanently remove an account send your credentials to `/auth/delete`; if they match, the user and associated FCM tokens are deleted and unsubscribed.
+Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. When you register or log in, a `refreshToken` is also returned. Call `/auth/logout` with your access token to invalidate the session and remove all push notification tokens. To permanently remove an account send a POST request to `/auth/delete` with your access token. If the account was created with a password include it in the request body; Google sign-in accounts can be deleted without providing credentials. All FCM tokens are unsubscribed upon deletion.
 
 
 Example request:

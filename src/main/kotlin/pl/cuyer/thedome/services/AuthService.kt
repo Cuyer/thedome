@@ -152,9 +152,11 @@ class AuthService(
         return true
     }
 
-    suspend fun deleteAccount(username: String, password: String): Boolean {
+    suspend fun deleteAccount(username: String, password: String?): Boolean {
         val user = collection.find(eq(User::username, username)).firstOrNull() ?: return false
-        if (!BCrypt.checkpw(password, user.passwordHash)) return false
+        if (user.googleId == null) {
+            if (password == null || !BCrypt.checkpw(password, user.passwordHash)) return false
+        }
         for (t in user.fcmTokens) {
             tokenService.removeToken(username, t.token)
         }

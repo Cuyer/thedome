@@ -71,12 +71,15 @@ class AuthEndpoint(private val service: AuthService) {
                         if (!result) throw InvalidCredentialsException()
                         call.respond(HttpStatusCode.NoContent)
                     }
-                }
-                post("/delete") {
-                    val req = call.receive<DeleteAccountRequest>()
-                    val deleted = service.deleteAccount(req.username, req.password)
-                    if (!deleted) throw InvalidCredentialsException()
-                    call.respond(HttpStatusCode.NoContent)
+                    post("/delete") {
+                        val principal = call.principal<JWTPrincipal>()!!
+                        val username = principal.getClaim("username", String::class)!!
+                        val req = try { call.receive<DeleteAccountRequest>() } catch (_: Exception) { null }
+                        val password = req?.password
+                        val deleted = service.deleteAccount(username, password)
+                        if (!deleted) throw InvalidCredentialsException()
+                        call.respond(HttpStatusCode.NoContent)
+                    }
                 }
             }
         }

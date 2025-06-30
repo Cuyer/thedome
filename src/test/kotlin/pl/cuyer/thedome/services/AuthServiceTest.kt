@@ -201,4 +201,30 @@ class AuthServiceTest {
         coVerify { collection.deleteOne(any<Bson>(), any()) }
         coVerify { tokenService.removeToken("user", "t1") }
     }
+
+    @Test
+    fun `deleteAccount allows google user without password`() = runBlocking {
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val user = User(username = "user", googleId = "g1", passwordHash = "", fcmTokens = listOf(FcmToken("t1", "ts")))
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        coEvery { collection.deleteOne(any<Bson>(), any()) } returns mockk()
+        val service = AuthService(
+            collection,
+            "secret",
+            "issuer",
+            "audience",
+            3600_000,
+            3600_000,
+            tokenService,
+            "client",
+            HttpClient(MockEngine { respond("", HttpStatusCode.OK) }) { }
+        )
+
+        val result = service.deleteAccount("user", null)
+
+        assertTrue(result)
+        coVerify { collection.deleteOne(any<Bson>(), any()) }
+        coVerify { tokenService.removeToken("user", "t1") }
+    }
 }
