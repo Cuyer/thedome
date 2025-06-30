@@ -13,6 +13,7 @@ import java.security.MessageDigest
 import io.mockk.slot
 import com.mongodb.kotlin.client.coroutine.FindFlow
 import pl.cuyer.thedome.util.SimpleFindPublisher
+import pl.cuyer.thedome.domain.auth.FcmToken
 import pl.cuyer.thedome.services.FcmTokenService
 
 class AuthServiceTest {
@@ -25,8 +26,7 @@ class AuthServiceTest {
     fun `registerAnonymous stores user`() = runBlocking {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         coEvery { collection.insertOne(any(), any<InsertOneOptions>()) } returns mockk()
-        val tokenService = mockk<FcmTokenService>(relaxed = true)
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, mockk(relaxed = true))
 
         val result = service.registerAnonymous()
 
@@ -45,9 +45,7 @@ class AuthServiceTest {
             FindFlow(SimpleFindPublisher(listOf(updated)))
         )
         coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
-        val tokenService = mockk<FcmTokenService>(relaxed = true)
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
-
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, mockk(relaxed = true))
         val result = service.upgradeAnonymous("anon-123", "newuser", "pass")
 
         assertTrue(result?.accessToken?.isNotEmpty() == true)
@@ -65,8 +63,7 @@ class AuthServiceTest {
             FindFlow(SimpleFindPublisher(listOf(user)))
         )
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val tokenService = mockk<FcmTokenService>(relaxed = true)
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, mockk(relaxed = true))
 
         val result = service.login("user", "pass")
 
@@ -88,8 +85,7 @@ class AuthServiceTest {
         val slotUpdate = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val tokenService = mockk<FcmTokenService>(relaxed = true)
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, mockk(relaxed = true))
 
         val result = service.refresh(oldToken)
 
@@ -100,5 +96,44 @@ class AuthServiceTest {
         assertTrue(expectedFind.contains(oldHash))
         val expectedUpdate = hash(result!!.refreshToken)
         assertTrue(slotUpdate.captured.toString().contains(expectedUpdate))
+    }
+
+    @Test
+    fun `logout clears refresh and all tokens`() = runBlocking {
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val user = User(
+            username = "user",
+            passwordHash = "",
+            refreshToken = "hash",
+            fcmTokens = listOf(FcmToken("t1", "ts"), FcmToken("t2", "ts"))
+        )
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
+
+        val result = service.logout("user")
+
+        assertTrue(result)
+        coVerify { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
+        coVerify { tokenService.removeToken("user", "t1") }
+        coVerify { tokenService.removeToken("user", "t2") }
+    }
+
+    @Test
+    fun `deleteAccount removes user and tokens`() = runBlocking {
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
+        val user = User(username = "user", passwordHash = passwordHash, fcmTokens = listOf(FcmToken("t1", "ts")))
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        coEvery { collection.deleteOne(any<Bson>(), any()) } returns mockk()
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
+
+        val result = service.deleteAccount("user", "pass")
+
+        assertTrue(result)
+        coVerify { collection.deleteOne(any<Bson>(), any()) }
+        coVerify { tokenService.removeToken("user", "t1") }
     }
 }
