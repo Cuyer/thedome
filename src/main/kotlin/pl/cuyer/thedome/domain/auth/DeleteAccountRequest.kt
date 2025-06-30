@@ -4,6 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DeleteAccountRequest(
-    val username: String,
-    val password: String
+    val password: String? = null
 )
