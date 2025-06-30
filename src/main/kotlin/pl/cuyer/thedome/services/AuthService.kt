@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.domain.auth.TokenPair
 import pl.cuyer.thedome.domain.auth.AccessToken
+import pl.cuyer.thedome.services.FcmTokenService
 import org.slf4j.LoggerFactory
 import java.util.Date
 import java.util.UUID
@@ -21,7 +22,8 @@ class AuthService(
     private val jwtIssuer: String,
     private val jwtAudience: String,
     private val tokenValidityMs: Long,
-    private val anonTokenValidityMs: Long
+    private val anonTokenValidityMs: Long,
+    private val fcmTokenService: FcmTokenService
 ) {
     private val algorithm = Algorithm.HMAC256(jwtSecret)
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
@@ -76,6 +78,7 @@ class AuthService(
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
+        fcmTokenService.resubscribeUserTokens(user.username)
         logger.info("User ${user.username} logged in")
         return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, user.username, user.email)
     }

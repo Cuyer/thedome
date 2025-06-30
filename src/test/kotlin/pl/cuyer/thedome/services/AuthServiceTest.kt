@@ -5,7 +5,6 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import com.mongodb.kotlin.client.coroutine.MongoCollection
-import com.mongodb.kotlin.client.model.Filters.eq
 import org.bson.conversions.Bson
 import pl.cuyer.thedome.domain.auth.User
 import com.mongodb.client.model.InsertOneOptions
@@ -14,6 +13,7 @@ import java.security.MessageDigest
 import io.mockk.slot
 import com.mongodb.kotlin.client.coroutine.FindFlow
 import pl.cuyer.thedome.util.SimpleFindPublisher
+import pl.cuyer.thedome.services.FcmTokenService
 
 class AuthServiceTest {
 
@@ -25,7 +25,8 @@ class AuthServiceTest {
     fun `registerAnonymous stores user`() = runBlocking {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         coEvery { collection.insertOne(any(), any<InsertOneOptions>()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000)
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
 
         val result = service.registerAnonymous()
 
@@ -44,7 +45,8 @@ class AuthServiceTest {
             FindFlow(SimpleFindPublisher(listOf(updated)))
         )
         coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000)
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
 
         val result = service.upgradeAnonymous("anon-123", "newuser", "pass")
 
@@ -63,7 +65,8 @@ class AuthServiceTest {
             FindFlow(SimpleFindPublisher(listOf(user)))
         )
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000)
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
 
         val result = service.login("user", "pass")
 
@@ -72,6 +75,7 @@ class AuthServiceTest {
         assertTrue(result?.email == "user@example.com")
         val expected = hash(result!!.refreshToken)
         assertTrue(slotUpdate.captured.toString().contains(expected))
+        coVerify { tokenService.resubscribeUserTokens("user") }
     }
 
     @Test
@@ -84,7 +88,8 @@ class AuthServiceTest {
         val slotUpdate = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000)
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
 
         val result = service.refresh(oldToken)
 
