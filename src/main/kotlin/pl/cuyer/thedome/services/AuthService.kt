@@ -10,7 +10,12 @@ import kotlinx.coroutines.flow.firstOrNull
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.domain.auth.TokenPair
 import pl.cuyer.thedome.domain.auth.AccessToken
+import pl.cuyer.thedome.domain.auth.GoogleTokenInfo
 import pl.cuyer.thedome.services.FcmTokenService
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import org.slf4j.LoggerFactory
 import java.util.Date
 import java.util.UUID
@@ -26,7 +31,9 @@ class AuthService(
     private val jwtAudience: String,
     private val tokenValidityMs: Long,
     private val anonTokenValidityMs: Long,
-    private val tokenService: FcmTokenService
+    private val tokenService: FcmTokenService,
+    private val googleClientId: String,
+    private val client: HttpClient
 ) {
     private val algorithm = Algorithm.HMAC256(jwtSecret)
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
@@ -89,6 +96,39 @@ class AuthService(
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
         tokenService.resubscribeUserTokens(user.username)
         logger.info("User ${user.username} logged in")
+        return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, user.username, user.email)
+    }
+
+    suspend fun loginWithGoogle(token: String): TokenPair? {
+        logger.info("Verifying Google token")
+        val info = client.get("https://oauth2.googleapis.com/tokeninfo") {
+            url {
+                parameters.append("id_token", token)
+            }
+        }.body<GoogleTokenInfo>()
+        if (info.audience != googleClientId) return null
+        val googleId = info.subject
+        var user = collection.find(eq(User::googleId, googleId)).firstOrNull()
+        if (user == null) {
+            val email = info.email
+            var base = email?.substringBefore("@") ?: "google-$googleId"
+            var name = base
+            var i = 1
+            while (collection.find(eq(User::username, name)).firstOrNull() != null) {
+                name = "$base$i"
+                i++
+            }
+            user = User(username = name, email = email, googleId = googleId, passwordHash = "")
+            collection.insertOne(user)
+        } else if (user.googleId == null) {
+            collection.updateOne(eq(User::username, user.username), set(User::googleId, googleId))
+            user = user.copy(googleId = googleId)
+        }
+        val refresh = generateRefreshToken()
+        val hashedRefresh = hashToken(refresh)
+        collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
+        tokenService.resubscribeUserTokens(user.username)
+        logger.info("User ${user.username} logged in via Google")
         return TokenPair(generateAccessToken(user, tokenValidityMs), refresh, user.username, user.email)
     }
 

@@ -18,6 +18,7 @@ Values can also be specified in `src/main/resources/application.conf` under the 
 - `FETCH_CRON` – cron expression for server fetch schedule (defaults to every 10 minutes; uses seconds as the first field)
 - `CLEANUP_CRON` – cron expression for removing outdated servers (defaults to daily at midnight)
 - `API_KEY` – optional RustMaps API key
+- `GOOGLE_CLIENT_ID` – OAuth2 client ID used to verify Google tokens
 - `PORT` – overrides the default port if implemented
 - `JWT_SECRET` – HMAC secret for signing tokens (**required**; the application fails if missing)
 - `JWT_AUDIENCE` – JWT audience (default `thedomeAudience`)

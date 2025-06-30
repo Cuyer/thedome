@@ -110,6 +110,12 @@ fun appModule(config: AppConfig) = module {
                 .unique(true)
                 .partialFilterExpression(partial)
             collection.createIndex(Document("email", 1), options)
+            val googlePartial = Document("googleId", Document("\$type", "string"))
+            val googleOptions = IndexOptions()
+                .name("googleId_1")
+                .unique(true)
+                .partialFilterExpression(googlePartial)
+            collection.createIndex(Document("googleId", 1), googleOptions)
         }
         collection
     }
@@ -126,6 +132,8 @@ fun appModule(config: AppConfig) = module {
             config.jwtAudience,
             config.tokenValidity.toLong() * 1000L,
             config.anonTokenValidity.toLong() * 1000L,
+            get(),
+            config.googleClientId,
             get()
         )
     }

@@ -181,6 +181,25 @@ paths:
         '401':
           description: Invalid credentials
 
+  /auth/google:
+    post:
+      summary: Login with Google
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Authentication tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Invalid credentials
+
   /auth/refresh:
     post:
       summary: Refresh tokens
@@ -374,6 +393,13 @@ components:
       properties:
         refreshToken:
           type: string
+    GoogleAuthRequest:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
     TokenPair:
       type: object
       properties:
