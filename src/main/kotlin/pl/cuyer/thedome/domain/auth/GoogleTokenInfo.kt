@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 data class GoogleTokenInfo(
     @SerialName("aud") val audience: String,
     @SerialName("sub") val subject: String,
+    @SerialName("name") val name: String? = null,
+    @SerialName("givenName") val givenName: String? = null,
     val email: String? = null
 )
 
