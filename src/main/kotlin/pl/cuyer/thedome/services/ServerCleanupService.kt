@@ -16,6 +16,6 @@ class ServerCleanupService(
     suspend fun cleanupOldServers() {
         val cutoff: Instant = Clock.System.now() - 60.days
         val result = collection.deleteMany(Filters.lt("attributes.updatedAt", cutoff.toString()))
-        logger.info("Removed ${'$'}{result.deletedCount} outdated servers")
+        logger.info("Removed ${result.deletedCount} outdated servers")
     }
 }
