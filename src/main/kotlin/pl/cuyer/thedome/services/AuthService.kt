@@ -4,11 +4,13 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import com.mongodb.kotlin.client.model.Filters.eq
+import com.mongodb.client.model.Filters.eq as eqStr
 import com.mongodb.kotlin.client.model.Updates.set
 import kotlinx.coroutines.flow.firstOrNull
 import pl.cuyer.thedome.domain.auth.User
 import pl.cuyer.thedome.domain.auth.TokenPair
 import pl.cuyer.thedome.domain.auth.AccessToken
+import pl.cuyer.thedome.services.FcmTokenService
 import org.slf4j.LoggerFactory
 import java.util.Date
 import java.util.UUID
@@ -21,7 +23,8 @@ class AuthService(
     private val jwtIssuer: String,
     private val jwtAudience: String,
     private val tokenValidityMs: Long,
-    private val anonTokenValidityMs: Long
+    private val anonTokenValidityMs: Long,
+    private val tokenService: FcmTokenService
 ) {
     private val algorithm = Algorithm.HMAC256(jwtSecret)
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
@@ -89,6 +92,25 @@ class AuthService(
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedNew))
         logger.info("Issued new refresh token for ${user.username}")
         return TokenPair(generateAccessToken(user, tokenValidityMs), newRefresh, user.username, user.email)
+    }
+
+    suspend fun logout(username: String): Boolean {
+        val user = collection.find(eq(User::username, username)).firstOrNull() ?: return false
+        collection.updateOne(eq(User::username, username), set(User::refreshToken, null))
+        for (t in user.fcmTokens) {
+            tokenService.removeToken(username, t.token)
+        }
+        return true
+    }
+
+    suspend fun deleteAccount(username: String, password: String): Boolean {
+        val user = collection.find(eq(User::username, username)).firstOrNull() ?: return false
+        if (!BCrypt.checkpw(password, user.passwordHash)) return false
+        for (t in user.fcmTokens) {
+            tokenService.removeToken(username, t.token)
+        }
+        collection.deleteOne(eq(User::username, username))
+        return true
     }
 
     private fun generateAccessToken(user: User, validity: Long): String {

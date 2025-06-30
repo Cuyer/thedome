@@ -14,6 +14,7 @@ import pl.cuyer.thedome.domain.auth.LoginRequest
 import pl.cuyer.thedome.domain.auth.RegisterRequest
 import pl.cuyer.thedome.domain.auth.RefreshRequest
 import pl.cuyer.thedome.domain.auth.UpgradeRequest
+import pl.cuyer.thedome.domain.auth.DeleteAccountRequest
 import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
 import pl.cuyer.thedome.exceptions.InvalidCredentialsException
 import pl.cuyer.thedome.exceptions.InvalidRefreshTokenException
@@ -54,6 +55,21 @@ class AuthEndpoint(private val service: AuthService) {
                     val tokens = service.refresh(req.refreshToken)
                         ?: throw InvalidRefreshTokenException()
                     call.respond(tokens)
+                }
+                authenticate("auth-jwt") {
+                    post("/logout") {
+                        val principal = call.principal<JWTPrincipal>()!!
+                        val username = principal.getClaim("username", String::class)!!
+                        val result = service.logout(username)
+                        if (!result) throw InvalidCredentialsException()
+                        call.respond(HttpStatusCode.NoContent)
+                    }
+                }
+                post("/delete") {
+                    val req = call.receive<DeleteAccountRequest>()
+                    val deleted = service.deleteAccount(req.username, req.password)
+                    if (!deleted) throw InvalidCredentialsException()
+                    call.respond(HttpStatusCode.NoContent)
                 }
             }
         }

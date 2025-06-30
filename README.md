@@ -90,7 +90,7 @@ curl -X POST http://localhost:8080/auth/login \
   -d '{"username":"user","password":"password"}'
 ```
 
-Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. When you register or log in, a `refreshToken` is also returned and can be sent to `/auth/refresh` to obtain new tokens or `/auth/logout` to invalidate it. The access token also contains your username and email for convenience.
+Use the returned `accessToken` in the `Authorization` header (e.g. `Bearer <token>`) when calling `/servers` or `/filters/options`. When you register or log in, a `refreshToken` is also returned. Call `/auth/logout` with your access token to invalidate the session and remove all push notification tokens. To permanently remove an account send your credentials to `/auth/delete`; if they match, the user and associated FCM tokens are deleted and unsubscribed.
 
 
 Example request:
