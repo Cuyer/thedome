@@ -16,6 +16,8 @@ import java.util.Date
 import java.util.UUID
 import java.security.MessageDigest
 import org.mindrot.jbcrypt.BCrypt
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.milliseconds
 
 class AuthService(
     private val collection: MongoCollection<User>,
@@ -50,7 +52,13 @@ class AuthService(
     suspend fun registerAnonymous(): AccessToken {
         val username = "anon-${UUID.randomUUID()}"
         logger.info("Registering anonymous user $username")
-        val user = User(username = username, passwordHash = "", refreshToken = null)
+        val expires = Clock.System.now() + anonTokenValidityMs.milliseconds
+        val user = User(
+            username = username,
+            passwordHash = "",
+            refreshToken = null,
+            testEndsAt = expires.toString()
+        )
         collection.insertOne(user)
         logger.info("Anonymous user $username registered")
         return AccessToken(generateAccessToken(user, anonTokenValidityMs), username)

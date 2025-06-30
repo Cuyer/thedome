@@ -63,7 +63,8 @@ class AuthServiceTest {
             FindFlow(SimpleFindPublisher(listOf(user)))
         )
         coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
-        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, mockk(relaxed = true))
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val service = AuthService(collection, "secret", "issuer", "audience", 3600_000, 3600_000, tokenService)
 
         val result = service.login("user", "pass")
 
