@@ -136,16 +136,32 @@ class AuthService(
     suspend fun loginWithGoogle(token: String): TokenPair? {
         logger.info("Verifying Google token")
         val info = client.get("https://oauth2.googleapis.com/tokeninfo") {
-            url {
-                parameters.append("id_token", token)
-            }
+            url { parameters.append("id_token", token) }
         }.body<GoogleTokenInfo>()
+
         if (info.audience != googleClientId) return null
+
         val googleId = info.subject
+        val email = info.email
+        val name = info.name ?: info.givenName ?: "google-$googleId"
+
+        // 1. Try to find user by googleId
         var user = collection.find(eq(User::googleId, googleId)).firstOrNull()
+
+        // 2. If not found, try to find by email (for users who registered with email/password)
         if (user == null) {
-            val email = info.email
-            val name = info.name ?: info.givenName ?: "google-$googleId"
+            user = collection.find(eq(User::email, email)).firstOrNull()
+
+            if (user != null) {
+                // Link Google account to existing user
+                collection.updateOne(eq(User::username, user.username), set(User::googleId, googleId))
+                collection.updateOne(eq(User::username, user.username), set(User::provider, AuthProvider.GOOGLE))
+                user = user.copy(googleId = googleId, provider = AuthProvider.GOOGLE)
+            }
+        }
+
+        // 3. If still not found, register new user
+        if (user == null) {
             user = User(
                 username = name,
                 email = email,
@@ -154,16 +170,16 @@ class AuthService(
                 passwordHash = ""
             )
             collection.insertOne(user)
-        } else if (user.googleId == null) {
-            collection.updateOne(eq(User::username, user.username), set(User::googleId, googleId))
-            collection.updateOne(eq(User::username, user.username), set(User::provider, AuthProvider.GOOGLE))
-            user = user.copy(googleId = googleId, provider = AuthProvider.GOOGLE)
         }
+
+        // 4. Issue refresh token and update
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
         collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
         tokenService.resubscribeUserTokens(user.username)
+
         logger.info("User ${user.username} logged in via Google")
+
         return TokenPair(
             generateAccessToken(user, tokenValidityMs),
             refresh,
