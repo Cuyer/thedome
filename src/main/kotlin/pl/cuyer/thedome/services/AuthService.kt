@@ -111,7 +111,7 @@ class AuthService(
         var user = collection.find(eq(User::googleId, googleId)).firstOrNull()
         if (user == null) {
             val email = info.email
-            var base = email?.substringBefore("@") ?: "google-$googleId"
+            val base = email?.substringBefore("@") ?: "google-$googleId"
             var name = base
             var i = 1
             while (collection.find(eq(User::username, name)).firstOrNull() != null) {
