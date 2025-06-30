@@ -50,6 +50,7 @@ import pl.cuyer.thedome.routes.AuthEndpoint
 import pl.cuyer.thedome.routes.FavouritesEndpoint
 import pl.cuyer.thedome.routes.SubscriptionsEndpoint
 import pl.cuyer.thedome.routes.FcmTokenEndpoint
+import pl.cuyer.thedome.routes.ConfigEndpoint
 import io.ktor.server.plugins.ratelimit.*
 import kotlin.time.Duration.Companion.seconds
 import org.koin.ktor.plugin.Koin
@@ -263,12 +264,14 @@ fun Application.module() {
     val serversEndpoint = ServersEndpoint(serversService, favouritesService, subscriptionsService)
     val filtersEndpoint = FiltersEndpoint(filtersService)
     val authEndpoint = AuthEndpoint(authService)
+    val configEndpoint = ConfigEndpoint(config)
     val favouritesEndpoint = FavouritesEndpoint(favouritesService)
     val subscriptionsEndpoint = SubscriptionsEndpoint(subscriptionsService)
     val fcmTokenEndpoint = FcmTokenEndpoint(fcmTokenService)
 
     routing {
         authEndpoint.register(this)
+        configEndpoint.register(this)
 
         authenticate("auth-jwt") {
             get("/") {
