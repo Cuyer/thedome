@@ -9,5 +9,5 @@ private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
 fun logException(call: ApplicationCall, cause: Throwable) {
     val method = call.request.httpMethod.value
     val uri = call.request.uri
-    logger.error("Exception during $method $uri: ${'$'}{cause.message}", cause)
+    logger.error("Exception during $method $uri: ${cause.message}", cause)
 }

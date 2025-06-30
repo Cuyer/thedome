@@ -18,6 +18,6 @@ class AnonymousCleanupService(
             Filters.lt("testEndsAt", now)
         )
         val result = collection.deleteMany(filter)
-        logger.info("Removed ${'$'}{result.deletedCount} expired anonymous users")
+        logger.info("Removed ${result.deletedCount} expired anonymous users")
     }
 }
