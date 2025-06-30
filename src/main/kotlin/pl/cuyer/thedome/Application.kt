@@ -43,6 +43,7 @@ import pl.cuyer.thedome.services.FavouritesService
 import pl.cuyer.thedome.services.SubscriptionsService
 import pl.cuyer.thedome.services.FcmService
 import pl.cuyer.thedome.services.FcmTokenService
+import pl.cuyer.thedome.services.AnonymousCleanupService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
 import pl.cuyer.thedome.routes.AuthEndpoint
@@ -196,6 +197,7 @@ fun Application.module() {
     val cleanupService by inject<ServerCleanupService>()
     val fcmService by inject<FcmService>()
     val fcmTokenService by inject<FcmTokenService>()
+    val anonCleanupService by inject<AnonymousCleanupService>()
     val schedulerClient by inject<MongoClient>()
     logger.info("Scheduling fetch task with cron expression '${config.fetchCron}'")
     logger.info("Scheduling cleanup task with cron expression '${config.cleanupCron}'")
@@ -219,6 +221,11 @@ fun Application.module() {
             name = "cleanup-tokens"
             kronSchedule = { applyCron(config.cleanupCron) }
             task = { fcmTokenService.removeStaleTokens() }
+        }
+        task {
+            name = "cleanup-anonymous"
+            kronSchedule = { applyCron(config.cleanupCron) }
+            task = { anonCleanupService.cleanupExpiredUsers() }
         }
         task {
             name = "resubscribe-topics"
