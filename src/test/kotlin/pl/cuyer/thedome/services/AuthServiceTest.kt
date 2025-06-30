@@ -11,6 +11,7 @@ import kotlin.test.assertTrue
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import org.bson.conversions.Bson
 import pl.cuyer.thedome.domain.auth.User
+import pl.cuyer.thedome.domain.auth.AuthProvider
 import com.mongodb.client.model.InsertOneOptions
 import org.mindrot.jbcrypt.BCrypt
 import java.security.MessageDigest
@@ -46,12 +47,22 @@ class AuthServiceTest {
 
         assertTrue(result.accessToken.isNotEmpty())
         assertTrue(result.username.startsWith("anon-"))
+        assertTrue(result.provider == AuthProvider.ANONYMOUS)
         coVerify { collection.insertOne(match { it.username.startsWith("anon-") && it.refreshToken == null && it.email == null }, any<InsertOneOptions>()) }
     }
     @Test
     fun `upgradeAnonymous converts user`() = runBlocking {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
-        val anon = User(username = "anon-123", email = null, passwordHash = "", refreshToken = null, favourites = emptyList(), subscriptions = emptyList())
+        val anon = User(
+            username = "anon-123",
+            email = null,
+            googleId = null,
+            provider = AuthProvider.ANONYMOUS,
+            passwordHash = "",
+            refreshToken = null,
+            favourites = emptyList(),
+            subscriptions = emptyList()
+        )
         val updated = anon.copy(username = "newuser")
         every { collection.find(any<Bson>()) } returnsMany listOf(
             FindFlow(SimpleFindPublisher(listOf(anon))),
@@ -73,14 +84,23 @@ class AuthServiceTest {
         val result = service.upgradeAnonymous("anon-123", "newuser", "pass")
 
         assertTrue(result?.accessToken?.isNotEmpty() == true)
-        coVerify(exactly = 3) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
+        assertTrue(result?.provider == AuthProvider.LOCAL)
+        coVerify(exactly = 4) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
     }
 
     @Test
     fun `login hashes refresh token`() = runBlocking {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
-        val user = User(username = "user", email = "user@example.com", passwordHash = passwordHash, favourites = emptyList(), subscriptions = emptyList())
+        val user = User(
+            username = "user",
+            email = "user@example.com",
+            googleId = null,
+            provider = AuthProvider.LOCAL,
+            passwordHash = passwordHash,
+            favourites = emptyList(),
+            subscriptions = emptyList()
+        )
         val slotUpdate = slot<Bson>()
         every { collection.find(any<Bson>()) } returnsMany listOf(
             FindFlow(SimpleFindPublisher(listOf(user))),
@@ -105,6 +125,7 @@ class AuthServiceTest {
         assertTrue(result?.refreshToken?.isNotEmpty() == true)
         assertTrue(result?.username == "user")
         assertTrue(result?.email == "user@example.com")
+        assertTrue(result?.provider == AuthProvider.LOCAL)
         val expected = hash(result!!.refreshToken)
         assertTrue(slotUpdate.captured.toString().contains(expected))
         coVerify { tokenService.resubscribeUserTokens("user") }
@@ -115,7 +136,16 @@ class AuthServiceTest {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         val oldToken = "old-token"
         val oldHash = hash(oldToken)
-        val user = User(username = "user", email = "user@example.com", passwordHash = "", refreshToken = oldHash, favourites = emptyList(), subscriptions = emptyList())
+        val user = User(
+            username = "user",
+            email = "user@example.com",
+            googleId = null,
+            provider = AuthProvider.LOCAL,
+            passwordHash = "",
+            refreshToken = oldHash,
+            favourites = emptyList(),
+            subscriptions = emptyList()
+        )
         val slotFind = slot<Bson>()
         val slotUpdate = slot<Bson>()
         every { collection.find(capture(slotFind)) } returns FindFlow(SimpleFindPublisher(listOf(user)))
@@ -137,6 +167,7 @@ class AuthServiceTest {
         assertTrue(result?.refreshToken?.isNotEmpty() == true)
         assertTrue(result?.username == "user")
         assertTrue(result?.email == "user@example.com")
+        assertTrue(result?.provider == AuthProvider.LOCAL)
         val expectedFind = slotFind.captured.toString()
         assertTrue(expectedFind.contains(oldHash))
         val expectedUpdate = hash(result!!.refreshToken)
@@ -149,6 +180,9 @@ class AuthServiceTest {
         val tokenService = mockk<FcmTokenService>(relaxed = true)
         val user = User(
             username = "user",
+            email = null,
+            googleId = null,
+            provider = AuthProvider.LOCAL,
             passwordHash = "",
             refreshToken = "hash",
             fcmTokens = listOf(FcmToken("t1", "ts"), FcmToken("t2", "ts"))
@@ -180,7 +214,14 @@ class AuthServiceTest {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         val tokenService = mockk<FcmTokenService>(relaxed = true)
         val passwordHash = BCrypt.hashpw("pass", BCrypt.gensalt())
-        val user = User(username = "user", passwordHash = passwordHash, fcmTokens = listOf(FcmToken("t1", "ts")))
+        val user = User(
+            username = "user",
+            email = null,
+            googleId = null,
+            provider = AuthProvider.LOCAL,
+            passwordHash = passwordHash,
+            fcmTokens = listOf(FcmToken("t1", "ts"))
+        )
         every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { collection.deleteOne(any<Bson>(), any()) } returns mockk()
         val service = AuthService(
@@ -206,7 +247,14 @@ class AuthServiceTest {
     fun `deleteAccount allows google user without password`() = runBlocking {
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         val tokenService = mockk<FcmTokenService>(relaxed = true)
-        val user = User(username = "user", googleId = "g1", passwordHash = "", fcmTokens = listOf(FcmToken("t1", "ts")))
+        val user = User(
+            username = "user",
+            email = null,
+            googleId = "g1",
+            provider = AuthProvider.GOOGLE,
+            passwordHash = "",
+            fcmTokens = listOf(FcmToken("t1", "ts"))
+        )
         every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { collection.deleteOne(any<Bson>(), any()) } returns mockk()
         val service = AuthService(
