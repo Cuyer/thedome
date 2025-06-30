@@ -124,7 +124,8 @@ fun appModule(config: AppConfig) = module {
             config.jwtIssuer,
             config.jwtAudience,
             config.tokenValidity.toLong() * 1000L,
-            config.anonTokenValidity.toLong() * 1000L
+            config.anonTokenValidity.toLong() * 1000L,
+            get()
         )
     }
     single { FavouritesService(get(named("users")), get(named("servers")), config.favouritesLimit) }
