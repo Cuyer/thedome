@@ -275,4 +275,47 @@ class AuthServiceTest {
         coVerify { collection.deleteOne(any<Bson>(), any()) }
         coVerify { tokenService.removeToken("user", "t1") }
     }
+
+    @Test
+    fun `emailExists returns true when found`() = runBlocking {
+        val collection = mockk<MongoCollection<User>>()
+        val user = User(username = "user", email = "e@example.com", passwordHash = "")
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        val service = AuthService(
+            collection,
+            "secret",
+            "issuer",
+            "audience",
+            3600_000,
+            3600_000,
+            mockk(relaxed = true),
+            "client",
+            HttpClient(MockEngine { respond("", HttpStatusCode.OK) }) { }
+        )
+
+        val result = service.emailExists("e@example.com")
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `emailExists returns false when missing`() = runBlocking {
+        val collection = mockk<MongoCollection<User>>()
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(emptyList()))
+        val service = AuthService(
+            collection,
+            "secret",
+            "issuer",
+            "audience",
+            3600_000,
+            3600_000,
+            mockk(relaxed = true),
+            "client",
+            HttpClient(MockEngine { respond("", HttpStatusCode.OK) }) { }
+        )
+
+        val result = service.emailExists("e@example.com")
+
+        assertTrue(!result)
+    }
 }
