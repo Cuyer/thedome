@@ -6,6 +6,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
+import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
@@ -56,6 +57,12 @@ class AuthEndpoint(private val service: AuthService) {
                     val tokens = service.loginWithGoogle(req.token)
                         ?: throw InvalidCredentialsException()
                     call.respond(tokens)
+                }
+                get("/email-exists") {
+                    val email = call.request.queryParameters["email"]
+                        ?: return@get call.respond(HttpStatusCode.BadRequest)
+                    val exists = service.emailExists(email)
+                    call.respond(mapOf("exists" to exists))
                 }
                 post("/refresh") {
                     val req = call.receive<RefreshRequest>()

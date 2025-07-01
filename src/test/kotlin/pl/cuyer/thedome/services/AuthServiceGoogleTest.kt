@@ -53,7 +53,7 @@ class AuthServiceGoogleTest {
 
         val result = service.loginWithGoogle("token")
 
-        assertTrue(result?.username?.startsWith("e") == true)
+        assertTrue(result?.username == "google-sub1")
         assertTrue(result?.provider == AuthProvider.GOOGLE)
         coVerify { collection.insertOne(match { it.googleId == "sub1" }, any<InsertOneOptions>()) }
     }
