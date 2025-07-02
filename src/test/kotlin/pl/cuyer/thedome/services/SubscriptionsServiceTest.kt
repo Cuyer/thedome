@@ -50,7 +50,7 @@ class SubscriptionsServiceTest {
     fun `subscribe ignores limit for subscriber`() = runBlocking {
         val users = mockk<MongoCollection<User>>(relaxed = true)
         val slotUpdate = slot<Bson>()
-        val user = User(username = "user", email = null, passwordHash = "", subscriptions = listOf("1", "2", "3"), subscriber = true)
+        val user = User(username = "user", email = null, passwordHash = "", subscriptions = listOf("1", "2", "3"), subscribed = true)
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
         val messaging = mockk<FirebaseMessaging>(relaxed = true)

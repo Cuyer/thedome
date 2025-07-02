@@ -22,7 +22,7 @@ class SubscriptionsService(
     suspend fun subscribe(username: String, serverId: String): Boolean {
         val user = users.find(eq(User::username, username)).firstOrNull() ?: return false
         if (user.subscriptions.contains(serverId)) return true
-        if (!user.subscriber && user.subscriptions.size >= limit) throw SubscriptionLimitException()
+        if (!user.subscribed && user.subscriptions.size >= limit) throw SubscriptionLimitException()
         users.updateOne(eq(User::username, username), push(User::subscriptions, serverId))
         if (user.fcmTokens.isNotEmpty()) {
             try {

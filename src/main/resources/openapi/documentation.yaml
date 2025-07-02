@@ -411,6 +411,10 @@ components:
           type: string
         email:
           type: string
+        provider:
+          type: string
+        subscribed:
+          type: boolean
     AccessToken:
       type: object
       properties:

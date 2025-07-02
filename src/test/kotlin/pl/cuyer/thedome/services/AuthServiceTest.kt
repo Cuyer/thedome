@@ -85,6 +85,7 @@ class AuthServiceTest {
 
         assertTrue(result?.accessToken?.isNotEmpty() == true)
         assertTrue(result?.provider == AuthProvider.LOCAL)
+        assertTrue(result?.subscribed == false)
         coVerify(exactly = 4) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
     }
 
@@ -126,6 +127,7 @@ class AuthServiceTest {
         assertTrue(result?.username == "user")
         assertTrue(result?.email == "user@example.com")
         assertTrue(result?.provider == AuthProvider.LOCAL)
+        assertTrue(result?.subscribed == false)
         val expected = hash(result!!.refreshToken)
         assertTrue(slotUpdate.captured.toString().contains(expected))
         coVerify { tokenService.resubscribeUserTokens("user") }
@@ -168,6 +170,7 @@ class AuthServiceTest {
         assertTrue(result?.username == "user")
         assertTrue(result?.email == "user@example.com")
         assertTrue(result?.provider == AuthProvider.LOCAL)
+        assertTrue(result?.subscribed == false)
         val expectedFind = slotFind.captured.toString()
         assertTrue(expectedFind.contains(oldHash))
         val expectedUpdate = hash(result!!.refreshToken)

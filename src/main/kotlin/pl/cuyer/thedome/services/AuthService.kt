@@ -66,7 +66,8 @@ class AuthService(
             refresh,
             username,
             email,
-            AuthProvider.LOCAL
+            AuthProvider.LOCAL,
+            user.subscribed
         )
     }
 
@@ -111,7 +112,8 @@ class AuthService(
             refresh,
             newUsername,
             updated.email,
-            AuthProvider.LOCAL
+            AuthProvider.LOCAL,
+            updated.subscribed
         )
     }
 
@@ -129,7 +131,8 @@ class AuthService(
             refresh,
             user.username,
             user.email,
-            user.provider
+            user.provider,
+            user.subscribed
         )
     }
 
@@ -185,7 +188,8 @@ class AuthService(
             refresh,
             user.username,
             user.email,
-            AuthProvider.GOOGLE
+            AuthProvider.GOOGLE,
+            user.subscribed
         )
     }
 
@@ -202,7 +206,8 @@ class AuthService(
             newRefresh,
             user.username,
             user.email,
-            user.provider
+            user.provider,
+            user.subscribed
         )
     }
 

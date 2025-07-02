@@ -48,7 +48,7 @@ class FavouritesServiceTest {
         val users = mockk<MongoCollection<User>>(relaxed = true)
         val servers = mockk<MongoCollection<BattlemetricsServerContent>>(relaxed = true)
         val slotUpdate = slot<Bson>()
-        val user = User(username = "user", email = null, passwordHash = "", favourites = listOf("1", "2", "3"), subscriber = true, subscriptions = emptyList())
+        val user = User(username = "user", email = null, passwordHash = "", favourites = listOf("1", "2", "3"), subscribed = true, subscriptions = emptyList())
         every { users.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
         coEvery { users.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
         val service = FavouritesService(users, servers, 3)
