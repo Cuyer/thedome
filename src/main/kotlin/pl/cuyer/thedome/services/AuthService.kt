@@ -93,11 +93,12 @@ class AuthService(
         )
     }
 
-    suspend fun upgradeAnonymous(currentUsername: String, newUsername: String, password: String): TokenPair? {
+    suspend fun upgradeAnonymous(currentUsername: String, newUsername: String, password: String, email: String): TokenPair? {
         logger.info("Upgrading anonymous user $currentUsername to $newUsername")
         val anon = collection.find(eq(User::username, currentUsername)).firstOrNull() ?: return null
         if (!currentUsername.startsWith("anon-") || anon.passwordHash.isNotEmpty()) return null
         if (collection.find(eq(User::username, newUsername)).firstOrNull() != null) return null
+        if (collection.find(eq(User::email, email)).firstOrNull() != null) return null
         val hash = BCrypt.hashpw(password, BCrypt.gensalt())
         val refresh = generateRefreshToken()
         val hashedRefresh = hashToken(refresh)
@@ -105,6 +106,7 @@ class AuthService(
         collection.updateOne(eq(User::username, newUsername), set(User::passwordHash, hash))
         collection.updateOne(eq(User::username, newUsername), set(User::refreshToken, hashedRefresh))
         collection.updateOne(eq(User::username, newUsername), set(User::provider, AuthProvider.LOCAL))
+        collection.updateOne(eq(User::username, newUsername), set(User::email, email))
         logger.info("Anonymous user $currentUsername upgraded to $newUsername")
         val updated = collection.find(eq(User::username, newUsername)).firstOrNull() ?: return null
         return TokenPair(

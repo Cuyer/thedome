@@ -42,7 +42,7 @@ class AuthEndpoint(private val service: AuthService) {
                         val principal = call.principal<JWTPrincipal>()!!
                         val currentUsername = principal.getClaim("username", String::class)!!
                         val req = call.receive<UpgradeRequest>()
-                        val tokens = service.upgradeAnonymous(currentUsername, req.username, req.password)
+                        val tokens = service.upgradeAnonymous(currentUsername, req.username, req.password, req.email)
                             ?: throw AnonymousUpgradeException()
                         call.respond(tokens)
                     }

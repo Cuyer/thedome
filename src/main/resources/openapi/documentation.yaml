@@ -141,7 +141,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenPair'
         '409':
-          description: Username already exists
+          description: Username or email already exists
 
   /auth/register:
     post:
@@ -160,7 +160,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenPair'
         '409':
-          description: Username already exists
+          description: Username or email already exists
 
   /auth/login:
     post:
@@ -433,6 +433,8 @@ components:
       type: object
       properties:
         username:
+          type: string
+        email:
           type: string
         password:
           type: string

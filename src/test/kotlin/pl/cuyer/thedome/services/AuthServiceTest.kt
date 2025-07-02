@@ -63,9 +63,10 @@ class AuthServiceTest {
             favourites = emptyList(),
             subscriptions = emptyList()
         )
-        val updated = anon.copy(username = "newuser")
+        val updated = anon.copy(username = "newuser", email = "user@example.com")
         every { collection.find(any<Bson>()) } returnsMany listOf(
             FindFlow(SimpleFindPublisher(listOf(anon))),
+            FindFlow(SimpleFindPublisher(emptyList())),
             FindFlow(SimpleFindPublisher(emptyList())),
             FindFlow(SimpleFindPublisher(listOf(updated)))
         )
@@ -81,12 +82,13 @@ class AuthServiceTest {
             "client",
             HttpClient(MockEngine { respond("", HttpStatusCode.OK) }) { }
         )
-        val result = service.upgradeAnonymous("anon-123", "newuser", "pass")
+        val result = service.upgradeAnonymous("anon-123", "newuser", "pass", "user@example.com")
 
         assertTrue(result?.accessToken?.isNotEmpty() == true)
+        assertTrue(result?.email == "user@example.com")
         assertTrue(result?.provider == AuthProvider.LOCAL)
         assertTrue(result?.subscribed == false)
-        coVerify(exactly = 4) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
+        coVerify(exactly = 5) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
     }
 
     @Test

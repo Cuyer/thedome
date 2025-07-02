@@ -74,7 +74,7 @@ Anonymous tokens are rate limited. By default they may perform `60` requests eve
 curl -X POST http://localhost:8080/auth/upgrade \
   -H "Authorization: Bearer <accessToken>" \
   -H "Content-Type: application/json" \
-  -d '{"username":"user","password":"password"}'
+  -d '{"username":"user","password":"password","email":"user@example.com"}'
 ```
 
 You can also register an account directly:
