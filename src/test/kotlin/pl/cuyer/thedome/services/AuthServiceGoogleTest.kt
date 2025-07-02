@@ -72,7 +72,7 @@ class AuthServiceGoogleTest {
         val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
         val collection = mockk<MongoCollection<User>>(relaxed = true)
         val anon = User(username = "anon-1", provider = AuthProvider.ANONYMOUS, passwordHash = "", refreshToken = null)
-        val updated = anon.copy(username = "name", email = "u@example.com", googleId = "sub2", provider = AuthProvider.GOOGLE)
+        val updated = anon.copy(username = "name-sub2", email = "u@example.com", googleId = "sub2", provider = AuthProvider.GOOGLE)
         every { collection.find(any<Bson>()) } returnsMany listOf(
             FindFlow(SimpleFindPublisher(listOf(anon))),
             FindFlow(SimpleFindPublisher(emptyList())),
@@ -95,7 +95,7 @@ class AuthServiceGoogleTest {
 
         val result = service.upgradeAnonymousWithGoogle("anon-1", "token")
 
-        assertTrue(result?.username == "name")
+        assertTrue(result?.username == "name-sub2")
         assertTrue(result?.email == "u@example.com")
         assertTrue(result?.provider == AuthProvider.GOOGLE)
         assertTrue(result?.subscribed == false)
