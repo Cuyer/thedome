@@ -227,8 +227,8 @@ class AuthService(
         return true
     }
 
-    suspend fun emailExists(email: String): Boolean {
-        return collection.find(eq(User::email, email)).firstOrNull() != null
+    suspend fun emailExists(email: String): AuthProvider? {
+        return collection.find(eq(User::email, email)).firstOrNull()?.provider
     }
 
     private fun generateAccessToken(user: User, validity: Long): String {
