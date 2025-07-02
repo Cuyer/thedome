@@ -438,3 +438,5 @@ components:
           type: string
         password:
           type: string
+        token:
+          type: string

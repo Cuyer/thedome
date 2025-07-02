@@ -107,6 +107,7 @@ class AuthService(
         collection.updateOne(eq(User::username, newUsername), set(User::refreshToken, hashedRefresh))
         collection.updateOne(eq(User::username, newUsername), set(User::provider, AuthProvider.LOCAL))
         collection.updateOne(eq(User::username, newUsername), set(User::email, email))
+        collection.updateOne(eq(User::username, newUsername), set(User::testEndsAt, null))
         logger.info("Anonymous user $currentUsername upgraded to $newUsername")
         val updated = collection.find(eq(User::username, newUsername)).firstOrNull() ?: return null
         return TokenPair(
@@ -115,6 +116,47 @@ class AuthService(
             newUsername,
             updated.email,
             AuthProvider.LOCAL,
+            updated.subscribed
+        )
+    }
+
+    suspend fun upgradeAnonymousWithGoogle(currentUsername: String, token: String): TokenPair? {
+        logger.info("Upgrading anonymous user $currentUsername with Google")
+        val anon = collection.find(eq(User::username, currentUsername)).firstOrNull() ?: return null
+        if (!currentUsername.startsWith("anon-") || anon.passwordHash.isNotEmpty()) return null
+
+        val info = client.get("https://oauth2.googleapis.com/tokeninfo") {
+            url { parameters.append("id_token", token) }
+        }.body<GoogleTokenInfo>()
+
+        if (info.audience != googleClientId) return null
+
+        val googleId = info.subject
+        val email = info.email
+        val name = info.name ?: info.givenName ?: "google-$googleId"
+
+        if (collection.find(eq(User::googleId, googleId)).firstOrNull() != null) return null
+        if (email != null && collection.find(eq(User::email, email)).firstOrNull() != null) return null
+
+        val refresh = generateRefreshToken()
+        val hashedRefresh = hashToken(refresh)
+
+        collection.updateOne(eq(User::username, currentUsername), set(User::username, name))
+        collection.updateOne(eq(User::username, name), set(User::googleId, googleId))
+        collection.updateOne(eq(User::username, name), set(User::refreshToken, hashedRefresh))
+        collection.updateOne(eq(User::username, name), set(User::provider, AuthProvider.GOOGLE))
+        collection.updateOne(eq(User::username, name), set(User::email, email))
+        collection.updateOne(eq(User::username, name), set(User::testEndsAt, null))
+
+        logger.info("Anonymous user $currentUsername upgraded via Google")
+
+        val updated = collection.find(eq(User::username, name)).firstOrNull() ?: return null
+        return TokenPair(
+            generateAccessToken(updated, tokenValidityMs),
+            refresh,
+            updated.username,
+            updated.email,
+            AuthProvider.GOOGLE,
             updated.subscribed
         )
     }

@@ -88,7 +88,8 @@ class AuthServiceTest {
         assertTrue(result?.email == "user@example.com")
         assertTrue(result?.provider == AuthProvider.LOCAL)
         assertTrue(result?.subscribed == false)
-        coVerify(exactly = 5) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
+        coVerify(exactly = 6) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
+        coVerify { collection.updateOne(any<Bson>(), match<Bson> { it.toString().contains("testEndsAt") }, any()) }
     }
 
     @Test
