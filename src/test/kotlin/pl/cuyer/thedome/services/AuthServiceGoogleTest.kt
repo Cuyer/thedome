@@ -55,6 +55,7 @@ class AuthServiceGoogleTest {
 
         assertTrue(result?.username == "google-sub1")
         assertTrue(result?.provider == AuthProvider.GOOGLE)
+        assertTrue(result?.subscriber == false)
         coVerify { collection.insertOne(match { it.googleId == "sub1" }, any<InsertOneOptions>()) }
     }
 }
