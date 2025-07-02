@@ -133,7 +133,8 @@ class AuthService(
 
         val googleId = info.subject
         val email = info.email
-        val name = info.name ?: info.givenName ?: "google-$googleId"
+        val baseName = info.name ?: info.givenName ?: "google"
+        val name = "${baseName}-$googleId"
 
         if (collection.find(eq(User::googleId, googleId)).firstOrNull() != null) return null
         if (email != null && collection.find(eq(User::email, email)).firstOrNull() != null) return null
@@ -190,7 +191,8 @@ class AuthService(
 
         val googleId = info.subject
         val email = info.email
-        val name = info.name ?: info.givenName ?: "google-$googleId"
+        val baseName = info.name ?: info.givenName ?: "google"
+        val name = "${baseName}-$googleId"
 
         // 1. Try to find user by googleId
         var user = collection.find(eq(User::googleId, googleId)).firstOrNull()
