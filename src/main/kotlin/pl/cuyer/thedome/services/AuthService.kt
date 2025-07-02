@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import com.mongodb.kotlin.client.model.Filters.eq
+import com.mongodb.kotlin.client.model.Updates.combine
 import com.mongodb.client.model.Filters.eq as eqStr
 import com.mongodb.kotlin.client.model.Updates.set
 import kotlinx.coroutines.flow.firstOrNull
@@ -203,9 +204,17 @@ class AuthService(
 
             if (user != null) {
                 // Link Google account to existing user
-                collection.updateOne(eq(User::username, user.username), set(User::googleId, googleId))
-                collection.updateOne(eq(User::username, user.username), set(User::provider, AuthProvider.GOOGLE))
-                user = user.copy(googleId = googleId, provider = AuthProvider.GOOGLE)
+                collection.updateOne(eq(User::username, user.username), combine(
+                    set(User::googleId, googleId),
+                    set(User::provider, AuthProvider.GOOGLE),
+                    set(User::username, name),
+                    set(User::passwordHash, "")
+                ))
+                user = user.copy(
+                    googleId = googleId,
+                    provider = AuthProvider.GOOGLE,
+                    username = name
+                )
             }
         }
 
