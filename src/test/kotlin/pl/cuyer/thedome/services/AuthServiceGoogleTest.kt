@@ -58,5 +58,49 @@ class AuthServiceGoogleTest {
         assertTrue(result?.subscribed == false)
         coVerify { collection.insertOne(match { it.googleId == "sub1" }, any<InsertOneOptions>()) }
     }
+
+    @Test
+    fun `upgradeAnonymousWithGoogle converts user`() = runBlocking {
+        val info = GoogleTokenInfo(audience = "client", subject = "sub2", email = "u@example.com", name = "name")
+        val engine = MockEngine {
+            respond(
+                content = ByteReadChannel(json.encodeToString(info)),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val client = HttpClient(engine) { install(ContentNegotiation) { json() } }
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
+        val anon = User(username = "anon-1", provider = AuthProvider.ANONYMOUS, passwordHash = "", refreshToken = null)
+        val updated = anon.copy(username = "name", email = "u@example.com", googleId = "sub2", provider = AuthProvider.GOOGLE)
+        every { collection.find(any<Bson>()) } returnsMany listOf(
+            FindFlow(SimpleFindPublisher(listOf(anon))),
+            FindFlow(SimpleFindPublisher(emptyList())),
+            FindFlow(SimpleFindPublisher(emptyList())),
+            FindFlow(SimpleFindPublisher(listOf(updated)))
+        )
+        coEvery { collection.updateOne(any<Bson>(), any<Bson>(), any()) } returns mockk()
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val service = AuthService(
+            collection,
+            "secret",
+            "issuer",
+            "audience",
+            3600_000,
+            3600_000,
+            tokenService,
+            "client",
+            client
+        )
+
+        val result = service.upgradeAnonymousWithGoogle("anon-1", "token")
+
+        assertTrue(result?.username == "name")
+        assertTrue(result?.email == "u@example.com")
+        assertTrue(result?.provider == AuthProvider.GOOGLE)
+        assertTrue(result?.subscribed == false)
+        coVerify(exactly = 6) { collection.updateOne(any<Bson>(), any<Bson>(), any()) }
+        coVerify { collection.updateOne(any<Bson>(), match<Bson> { it.toString().contains("testEndsAt") }, any()) }
+    }
 }
 
