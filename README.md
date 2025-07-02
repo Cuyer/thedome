@@ -85,10 +85,14 @@ curl -X POST http://localhost:8080/auth/register \
   -d '{"username":"user","password":"password"}'
 ```
 
-You can check if an email is already registered:
+You can check if an email is already registered. If found, the authentication provider is returned:
 
 ```bash
 curl http://localhost:8080/auth/email-exists?email=user@example.com
+# {
+#   "exists": true,
+#   "provider": "LOCAL"
+# }
 ```
 
 ```bash

@@ -17,6 +17,7 @@ import pl.cuyer.thedome.domain.auth.RefreshRequest
 import pl.cuyer.thedome.domain.auth.UpgradeRequest
 import pl.cuyer.thedome.domain.auth.GoogleAuthRequest
 import pl.cuyer.thedome.domain.auth.DeleteAccountRequest
+import pl.cuyer.thedome.domain.auth.EmailExistsResponse
 import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
 import pl.cuyer.thedome.exceptions.InvalidCredentialsException
 import pl.cuyer.thedome.exceptions.InvalidRefreshTokenException
@@ -61,8 +62,8 @@ class AuthEndpoint(private val service: AuthService) {
                 get("/email-exists") {
                     val email = call.request.queryParameters["email"]
                         ?: return@get call.respond(HttpStatusCode.BadRequest)
-                    val exists = service.emailExists(email)
-                    call.respond(mapOf("exists" to exists))
+                    val provider = service.emailExists(email)
+                    call.respond(EmailExistsResponse(provider != null, provider))
                 }
                 post("/refresh") {
                     val req = call.receive<RefreshRequest>()

@@ -295,7 +295,7 @@ class AuthServiceTest {
 
         val result = service.emailExists("e@example.com")
 
-        assertTrue(result)
+        assertTrue(result == AuthProvider.LOCAL)
     }
 
     @Test
@@ -316,6 +316,6 @@ class AuthServiceTest {
 
         val result = service.emailExists("e@example.com")
 
-        assertTrue(!result)
+        assertTrue(result == null)
     }
 }
