@@ -413,7 +413,7 @@ components:
           type: string
         provider:
           type: string
-        subscriber:
+        subscribed:
           type: boolean
     AccessToken:
       type: object

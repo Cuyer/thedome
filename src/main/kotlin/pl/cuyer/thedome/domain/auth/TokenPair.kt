@@ -10,5 +10,5 @@ data class TokenPair(
     val username: String,
     val email: String?,
     val provider: AuthProvider,
-    val subscriber: Boolean
+    val subscribed: Boolean
 )
