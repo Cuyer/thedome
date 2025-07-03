@@ -373,4 +373,27 @@ class AuthServiceTest {
 
         assertTrue(!result)
     }
+
+    @Test
+    fun `changePassword fails when new password matches old`() = runBlocking {
+        val collection = mockk<MongoCollection<User>>()
+        val oldHash = BCrypt.hashpw("old", BCrypt.gensalt())
+        val user = User(username = "user", passwordHash = oldHash)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        val service = AuthService(
+            collection,
+            "secret",
+            "issuer",
+            "audience",
+            3600_000,
+            3600_000,
+            mockk(relaxed = true),
+            "client",
+            HttpClient(MockEngine { respond("", HttpStatusCode.OK) }) { }
+        )
+
+        val result = service.changePassword("user", "old", "old")
+
+        assertTrue(!result)
+    }
 }
