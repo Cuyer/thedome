@@ -1,25 +1,21 @@
 package pl.cuyer.thedome.services
 
-import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.messaging.Message
-import com.google.firebase.messaging.FirebaseMessagingException
 import com.google.auth.oauth2.GoogleCredentials
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.FirebaseMessagingException
+import com.google.firebase.messaging.Message
+import com.mongodb.client.model.Filters
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.toList
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import org.bson.conversions.Bson
+import org.slf4j.LoggerFactory
+import pl.cuyer.thedome.domain.auth.User
+import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.datetime.Clock
-import com.mongodb.kotlin.client.coroutine.MongoCollection
-import com.mongodb.client.model.Filters
-import org.slf4j.LoggerFactory
-import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
-import pl.cuyer.thedome.services.NotificationType
-import pl.cuyer.thedome.domain.auth.User
-import pl.cuyer.thedome.services.FcmTokenService
 
 class FcmService(
     private val messaging: FirebaseMessaging,
@@ -32,78 +28,114 @@ class FcmService(
 ) {
     private val logger = LoggerFactory.getLogger(FcmService::class.java)
 
+    private data class Range(val start: Instant, val end: Instant)
+
     suspend fun checkAndSend() = coroutineScope {
         val now = Clock.System.now()
-        data class Range(val start: String, val end: String)
 
-        val wipeRanges = notifyBeforeWipe.map { minutes ->
-            val start = now + minutes.minutes - 60.seconds
-            val end = now + minutes.minutes
-            Range(start.toString(), end.toString())
-        }
-        val mapRanges = notifyBeforeMapWipe.map { minutes ->
-            val start = now + minutes.minutes - 60.seconds
-            val end = now + minutes.minutes
-            Range(start.toString(), end.toString())
-        }
+        val wipeRanges = buildRanges(now, notifyBeforeWipe)
+        val mapRanges = buildRanges(now, notifyBeforeMapWipe)
 
-        val filters = (wipeRanges.map { r ->
-            Filters.and(
-                Filters.exists("attributes.details.rust_next_wipe"),
-                Filters.gte("attributes.details.rust_next_wipe", r.start),
-                Filters.lt("attributes.details.rust_next_wipe", r.end)
-            )
-        } + mapRanges.map { r ->
-            Filters.and(
-                Filters.exists("attributes.details.rust_next_wipe_map"),
-                Filters.gte("attributes.details.rust_next_wipe_map", r.start),
-                Filters.lt("attributes.details.rust_next_wipe_map", r.end)
-            )
-        }).toTypedArray()
+        val filter = buildCombinedFilter(wipeRanges, mapRanges) ?: return@coroutineScope
 
-        if (filters.isEmpty()) return@coroutineScope
-        val filter = Filters.or(*filters)
-        val due = servers.find(filter).toList()
+        val dueServers = servers.find(filter).toList()
 
-        due.map { server ->
+        dueServers.map { server ->
             async {
-                val id = server.id
-                if (id.isEmpty()) return@async
-                val details = server.attributes.details
-                val mapWipe = details?.rustNextWipeMap
-                val wipe = details?.rustNextWipe
-                val mapDue = mapWipe != null && mapRanges.any { mapWipe >= it.start && mapWipe < it.end }
-                val type = if (mapDue) NotificationType.MapWipe else NotificationType.Wipe
-                val timestamp = if (mapDue) mapWipe else wipe
-                val name = server.attributes.name
-                if (timestamp != null && name != null) {
-                    val subscribers = users.find(Filters.eq("subscriptions", id)).toList()
-                    if (subscribers.isNotEmpty()) {
-                        sendToTopic(id, name, type, timestamp)
-                    }
-                }
+                notifySubscribersIfDue(server, wipeRanges, mapRanges)
             }
         }.awaitAll()
     }
 
+    private fun buildRanges(now: Instant, minutesList: List<Int>): List<Range> {
+        return minutesList.map {
+            val end = now + it.minutes
+            val start = end - 60.seconds
+            Range(start, end)
+        }
+    }
+
+    private fun buildCombinedFilter(
+        wipeRanges: List<Range>,
+        mapRanges: List<Range>
+    ): Bson? {
+        val filters = buildRangeFilters(wipeRanges, "attributes.details.rust_next_wipe") +
+            buildRangeFilters(mapRanges, "attributes.details.rust_next_wipe_map")
+
+        return if (filters.isNotEmpty()) Filters.or(filters) else null
+    }
+
+    private fun buildRangeFilters(ranges: List<Range>, field: String): List<Bson> {
+        return ranges.map {
+            Filters.and(
+                Filters.exists(field),
+                Filters.gte(field, it.start.toString()),
+                Filters.lt(field, it.end.toString())
+            )
+        }
+    }
+
+    private suspend fun notifySubscribersIfDue(
+        server: BattlemetricsServerContent,
+        wipeRanges: List<Range>,
+        mapRanges: List<Range>
+    ) {
+        val id = server.id.takeIf { it.isNotEmpty() } ?: return
+        val details = server.attributes.details ?: return
+        val name = server.attributes.name ?: return
+
+        val mapWipe = details.rustNextWipeMap
+        val wipe = details.rustNextWipe
+
+        val isMapDue = mapWipe != null && mapRanges.any { it.contains(mapWipe) }
+        val isWipeDue = wipe != null && wipeRanges.any { it.contains(wipe) }
+
+        val type = when {
+            isMapDue -> NotificationType.MapWipe
+            isWipeDue -> NotificationType.Wipe
+            else -> return
+        }
+
+        val timestamp = if (isMapDue) mapWipe else wipe ?: return
+
+        val hasSubscribers = users.find(Filters.eq("subscriptions", id))
+            .limit(1)
+            .toList()
+            .isNotEmpty()
+
+        if (hasSubscribers) {
+            sendToTopic(id, name, type, timestamp)
+        }
+    }
+
+    private fun Range.contains(value: String): Boolean {
+        return try {
+            val instant = Instant.parse(value)
+            instant >= start && instant < end
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun sendToTopic(topic: String, name: String, type: NotificationType, timestamp: String) {
         logger.info("Sending notification to topic '{}'", topic)
+
         val message = Message.builder()
             .setTopic(topic)
             .putData("name", name)
             .putData("type", type.name)
             .putData("timestamp", timestamp)
             .build()
-        try {
+
+        runCatching {
             credentials.refreshIfExpired()
             withContext(Dispatchers.IO) {
                 messaging.sendAsync(message).get()
             }
-        } catch (e: Exception) {
-            if (e is FirebaseMessagingException) {
-                logger.warn("FCM error ${e.message}")
-            } else {
-                logger.warn("FCM error ${e.message}")
+        }.onFailure { e ->
+            when (e) {
+                is FirebaseMessagingException -> logger.warn("FCM error: ${e.message}")
+                else -> logger.warn("Unexpected FCM error: ${e.message}")
             }
         }
     }
