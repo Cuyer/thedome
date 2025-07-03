@@ -6,7 +6,12 @@ import com.google.firebase.messaging.FirebaseMessagingException
 import com.google.auth.oauth2.GoogleCredentials
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.datetime.Clock
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import com.mongodb.client.model.Filters
@@ -27,7 +32,7 @@ class FcmService(
 ) {
     private val logger = LoggerFactory.getLogger(FcmService::class.java)
 
-    suspend fun checkAndSend() {
+    suspend fun checkAndSend() = coroutineScope {
         val now = Clock.System.now()
         data class Range(val start: String, val end: String)
 
@@ -56,30 +61,32 @@ class FcmService(
             )
         }).toTypedArray()
 
-        if (filters.isEmpty()) return
+        if (filters.isEmpty()) return@coroutineScope
         val filter = Filters.or(*filters)
         val due = servers.find(filter).toList()
 
-        for (server in due) {
-            val id = server.id
-            if (id.isEmpty()) continue
-            val details = server.attributes.details
-            val mapWipe = details?.rustNextWipeMap
-            val wipe = details?.rustNextWipe
-            val mapDue = mapWipe != null && mapRanges.any { mapWipe >= it.start && mapWipe < it.end }
-            val type = if (mapDue) NotificationType.MapWipe else NotificationType.Wipe
-            val timestamp = if (mapDue) mapWipe else wipe
-            val name = server.attributes.name
-            if (timestamp != null && name != null) {
-                val subscribers = users.find(Filters.eq("subscriptions", id)).toList()
-                if (subscribers.isNotEmpty()) {
-                    sendToTopic(id, name, type, timestamp)
+        due.map { server ->
+            async {
+                val id = server.id
+                if (id.isEmpty()) return@async
+                val details = server.attributes.details
+                val mapWipe = details?.rustNextWipeMap
+                val wipe = details?.rustNextWipe
+                val mapDue = mapWipe != null && mapRanges.any { mapWipe >= it.start && mapWipe < it.end }
+                val type = if (mapDue) NotificationType.MapWipe else NotificationType.Wipe
+                val timestamp = if (mapDue) mapWipe else wipe
+                val name = server.attributes.name
+                if (timestamp != null && name != null) {
+                    val subscribers = users.find(Filters.eq("subscriptions", id)).toList()
+                    if (subscribers.isNotEmpty()) {
+                        sendToTopic(id, name, type, timestamp)
+                    }
                 }
             }
-        }
+        }.awaitAll()
     }
 
-    private suspend fun sendToTopic(topic: String, name: String, type: NotificationType, timestamp: String) {
+    suspend fun sendToTopic(topic: String, name: String, type: NotificationType, timestamp: String) {
         logger.info("Sending notification to topic '{}'", topic)
         val message = Message.builder()
             .setTopic(topic)
@@ -89,7 +96,9 @@ class FcmService(
             .build()
         try {
             credentials.refreshIfExpired()
-            messaging.send(message)
+            withContext(Dispatchers.IO) {
+                messaging.sendAsync(message).get()
+            }
         } catch (e: Exception) {
             if (e is FirebaseMessagingException) {
                 logger.warn("FCM error ${e.message}")
