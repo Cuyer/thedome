@@ -1,0 +1,315 @@
+package pl.cuyer.thedome.services
+
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import com.mongodb.kotlin.client.model.Filters.eq
+import com.mongodb.kotlin.client.model.Updates.combine
+import com.mongodb.client.model.Filters.eq as eqStr
+import com.mongodb.kotlin.client.model.Updates.set
+import kotlinx.coroutines.flow.firstOrNull
+import pl.cuyer.thedome.domain.auth.User
+import pl.cuyer.thedome.domain.auth.TokenPair
+import pl.cuyer.thedome.domain.auth.AccessToken
+import pl.cuyer.thedome.domain.auth.GoogleTokenInfo
+import pl.cuyer.thedome.domain.auth.AuthProvider
+import pl.cuyer.thedome.services.FcmTokenService
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import org.slf4j.LoggerFactory
+import java.util.Date
+import java.util.UUID
+import java.security.MessageDigest
+import org.mindrot.jbcrypt.BCrypt
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.milliseconds
+
+class AuthService(
+    private val collection: MongoCollection<User>,
+    private val jwtSecret: String,
+    private val jwtIssuer: String,
+    private val jwtAudience: String,
+    private val tokenValidityMs: Long,
+    private val anonTokenValidityMs: Long,
+    private val tokenService: FcmTokenService,
+    private val googleClientId: String,
+    private val client: HttpClient
+) {
+    private val algorithm = Algorithm.HMAC256(jwtSecret)
+    private val logger = LoggerFactory.getLogger(AuthService::class.java)
+
+    private fun hashToken(token: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
+    suspend fun register(username: String, email: String, password: String): TokenPair? {
+        logger.info("Registering user: $username")
+        val existing = collection.find(eq(User::username, username)).firstOrNull() ?: collection.find(eq(User::email, email)).firstOrNull()
+        if (existing != null) return null
+        val hash = BCrypt.hashpw(password, BCrypt.gensalt())
+        val refresh = generateRefreshToken()
+        val hashedRefresh = hashToken(refresh)
+        val user = User(
+            username = username,
+            email = email,
+            googleId = null,
+            provider = AuthProvider.LOCAL,
+            passwordHash = hash,
+            refreshToken = hashedRefresh
+        )
+        collection.insertOne(user)
+        logger.info("User $username registered")
+        return TokenPair(
+            generateAccessToken(user, tokenValidityMs),
+            refresh,
+            username,
+            email,
+            AuthProvider.LOCAL,
+            user.subscribed
+        )
+    }
+
+    suspend fun registerAnonymous(): AccessToken {
+        val username = "anon-${UUID.randomUUID()}"
+        logger.info("Registering anonymous user $username")
+        val expires = Clock.System.now() + anonTokenValidityMs.milliseconds
+        val user = User(
+            username = username,
+            email = null,
+            googleId = null,
+            provider = AuthProvider.ANONYMOUS,
+            passwordHash = "",
+            refreshToken = null,
+            testEndsAt = expires.toString()
+        )
+        collection.insertOne(user)
+        logger.info("Anonymous user $username registered")
+        return AccessToken(
+            generateAccessToken(user, anonTokenValidityMs),
+            username,
+            AuthProvider.ANONYMOUS
+        )
+    }
+
+    suspend fun upgradeAnonymous(currentUsername: String, newUsername: String, password: String, email: String): TokenPair? {
+        logger.info("Upgrading anonymous user $currentUsername to $newUsername")
+        val anon = collection.find(eq(User::username, currentUsername)).firstOrNull() ?: return null
+        if (!currentUsername.startsWith("anon-") || anon.passwordHash.isNotEmpty()) return null
+        if (collection.find(eq(User::username, newUsername)).firstOrNull() != null) return null
+        if (collection.find(eq(User::email, email)).firstOrNull() != null) return null
+        val hash = BCrypt.hashpw(password, BCrypt.gensalt())
+        val refresh = generateRefreshToken()
+        val hashedRefresh = hashToken(refresh)
+        collection.updateOne(eq(User::username, currentUsername), set(User::username, newUsername))
+        collection.updateOne(eq(User::username, newUsername), set(User::passwordHash, hash))
+        collection.updateOne(eq(User::username, newUsername), set(User::refreshToken, hashedRefresh))
+        collection.updateOne(eq(User::username, newUsername), set(User::provider, AuthProvider.LOCAL))
+        collection.updateOne(eq(User::username, newUsername), set(User::email, email))
+        collection.updateOne(eq(User::username, newUsername), set(User::testEndsAt, null))
+        logger.info("Anonymous user $currentUsername upgraded to $newUsername")
+        val updated = collection.find(eq(User::username, newUsername)).firstOrNull() ?: return null
+        return TokenPair(
+            generateAccessToken(updated, tokenValidityMs),
+            refresh,
+            newUsername,
+            updated.email,
+            AuthProvider.LOCAL,
+            updated.subscribed
+        )
+    }
+
+    suspend fun upgradeAnonymousWithGoogle(currentUsername: String, token: String): TokenPair? {
+        logger.info("Upgrading anonymous user $currentUsername with Google")
+        val anon = collection.find(eq(User::username, currentUsername)).firstOrNull() ?: return null
+        if (!currentUsername.startsWith("anon-") || anon.passwordHash.isNotEmpty()) return null
+
+        val info = client.get("https://oauth2.googleapis.com/tokeninfo") {
+            url { parameters.append("id_token", token) }
+        }.body<GoogleTokenInfo>()
+
+        if (info.audience != googleClientId) return null
+
+        val googleId = info.subject
+        val email = info.email
+        val baseName = info.name ?: info.givenName ?: "google"
+        val name = "${baseName}-$googleId"
+
+        if (collection.find(eq(User::googleId, googleId)).firstOrNull() != null) return null
+        if (email != null && collection.find(eq(User::email, email)).firstOrNull() != null) return null
+
+        val refresh = generateRefreshToken()
+        val hashedRefresh = hashToken(refresh)
+
+        collection.updateOne(eq(User::username, currentUsername), set(User::username, name))
+        collection.updateOne(eq(User::username, name), set(User::googleId, googleId))
+        collection.updateOne(eq(User::username, name), set(User::refreshToken, hashedRefresh))
+        collection.updateOne(eq(User::username, name), set(User::provider, AuthProvider.GOOGLE))
+        collection.updateOne(eq(User::username, name), set(User::email, email))
+        collection.updateOne(eq(User::username, name), set(User::testEndsAt, null))
+
+        logger.info("Anonymous user $currentUsername upgraded via Google")
+
+        val updated = collection.find(eq(User::username, name)).firstOrNull() ?: return null
+        return TokenPair(
+            generateAccessToken(updated, tokenValidityMs),
+            refresh,
+            updated.username,
+            updated.email,
+            AuthProvider.GOOGLE,
+            updated.subscribed
+        )
+    }
+
+    suspend fun login(username: String, password: String): TokenPair? {
+        logger.info("User $username attempting login")
+        val user = collection.find(eq(User::username, username)).firstOrNull() ?: collection.find(eq(User::email, username)).firstOrNull() ?: return null
+        if (!BCrypt.checkpw(password, user.passwordHash)) return null
+        val refresh = generateRefreshToken()
+        val hashedRefresh = hashToken(refresh)
+        collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
+        tokenService.resubscribeUserTokens(user.username)
+        logger.info("User ${user.username} logged in")
+        return TokenPair(
+            generateAccessToken(user, tokenValidityMs),
+            refresh,
+            user.username,
+            user.email,
+            user.provider,
+            user.subscribed
+        )
+    }
+
+    suspend fun loginWithGoogle(token: String): TokenPair? {
+        logger.info("Verifying Google token")
+        val info = client.get("https://oauth2.googleapis.com/tokeninfo") {
+            url { parameters.append("id_token", token) }
+        }.body<GoogleTokenInfo>()
+
+        if (info.audience != googleClientId) return null
+
+        val googleId = info.subject
+        val email = info.email
+        val baseName = info.name ?: info.givenName ?: "google"
+        val name = "${baseName}-$googleId"
+
+        // 1. Try to find user by googleId
+        var user = collection.find(eq(User::googleId, googleId)).firstOrNull()
+
+        // 2. If not found, try to find by email (for users who registered with email/password)
+        if (user == null) {
+            user = collection.find(eq(User::email, email)).firstOrNull()
+
+            if (user != null) {
+                // Link Google account to existing user
+                collection.updateOne(eq(User::username, user.username), combine(
+                    set(User::googleId, googleId),
+                    set(User::provider, AuthProvider.GOOGLE),
+                    set(User::username, name),
+                    set(User::passwordHash, "")
+                ))
+                user = user.copy(
+                    googleId = googleId,
+                    provider = AuthProvider.GOOGLE,
+                    username = name
+                )
+            }
+        }
+
+        // 3. If still not found, register new user
+        if (user == null) {
+            user = User(
+                username = name,
+                email = email,
+                googleId = googleId,
+                provider = AuthProvider.GOOGLE,
+                passwordHash = ""
+            )
+            collection.insertOne(user)
+        }
+
+        // 4. Issue refresh token and update
+        val refresh = generateRefreshToken()
+        val hashedRefresh = hashToken(refresh)
+        collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedRefresh))
+        tokenService.resubscribeUserTokens(user.username)
+
+        logger.info("User ${user.username} logged in via Google")
+
+        return TokenPair(
+            generateAccessToken(user, tokenValidityMs),
+            refresh,
+            user.username,
+            user.email,
+            AuthProvider.GOOGLE,
+            user.subscribed
+        )
+    }
+
+    suspend fun refresh(refreshToken: String): TokenPair? {
+        logger.info("Refreshing token")
+        val hashed = hashToken(refreshToken)
+        val user = collection.find(eq(User::refreshToken, hashed)).firstOrNull() ?: return null
+        val newRefresh = generateRefreshToken()
+        val hashedNew = hashToken(newRefresh)
+        collection.updateOne(eq(User::username, user.username), set(User::refreshToken, hashedNew))
+        logger.info("Issued new refresh token for ${user.username}")
+        return TokenPair(
+            generateAccessToken(user, tokenValidityMs),
+            newRefresh,
+            user.username,
+            user.email,
+            user.provider,
+            user.subscribed
+        )
+    }
+
+    suspend fun logout(username: String): Boolean {
+        val user = collection.find(eq(User::username, username)).firstOrNull() ?: return false
+        collection.updateOne(eq(User::username, username), set(User::refreshToken, null))
+        for (t in user.fcmTokens) {
+            tokenService.removeToken(username, t.token)
+        }
+        return true
+    }
+
+    suspend fun deleteAccount(username: String, password: String?): Boolean {
+        val user = collection.find(eq(User::username, username)).firstOrNull() ?: return false
+        if (user.googleId == null) {
+            if (password == null || !BCrypt.checkpw(password, user.passwordHash)) return false
+        }
+        for (t in user.fcmTokens) {
+            tokenService.removeToken(username, t.token)
+        }
+        collection.deleteOne(eq(User::username, username))
+        return true
+    }
+
+    suspend fun changePassword(username: String, oldPassword: String, newPassword: String): Boolean {
+        val user = collection.find(eq(User::username, username)).firstOrNull() ?: return false
+        if (user.googleId != null) return false
+        if (!BCrypt.checkpw(oldPassword, user.passwordHash)) return false
+        if (BCrypt.checkpw(newPassword, user.passwordHash)) return false
+        val hash = BCrypt.hashpw(newPassword, BCrypt.gensalt())
+        collection.updateOne(eq(User::username, username), set(User::passwordHash, hash))
+        return true
+    }
+
+    suspend fun emailExists(email: String): AuthProvider? {
+        return collection.find(eq(User::email, email)).firstOrNull()?.provider
+    }
+
+    private fun generateAccessToken(user: User, validity: Long): String {
+        return JWT.create()
+            .withAudience(jwtAudience)
+            .withIssuer(jwtIssuer)
+            .withClaim("username", user.username)
+            .withClaim("email", user.email)
+            .withExpiresAt(Date(System.currentTimeMillis() + validity))
+            .sign(algorithm)
+    }
+
+    private fun generateRefreshToken(): String = UUID.randomUUID().toString()
+}

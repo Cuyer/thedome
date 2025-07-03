@@ -10,59 +10,127 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.plugins.swagger.*
+import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
+import io.micrometer.prometheus.PrometheusMeterRegistry
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 
 import org.slf4j.LoggerFactory
 import pl.cuyer.thedome.domain.battlemetrics.*
 import pl.cuyer.thedome.resources.Servers
 import pl.cuyer.thedome.services.ServerFetchService
+import pl.cuyer.thedome.services.ServerCleanupService
 import pl.cuyer.thedome.services.ServersService
 import pl.cuyer.thedome.services.FiltersService
+import pl.cuyer.thedome.services.AuthService
+import pl.cuyer.thedome.services.FavouritesService
+import pl.cuyer.thedome.services.SubscriptionsService
+import pl.cuyer.thedome.services.FcmService
+import pl.cuyer.thedome.services.FcmTokenService
+import pl.cuyer.thedome.services.AnonymousCleanupService
 import pl.cuyer.thedome.routes.ServersEndpoint
 import pl.cuyer.thedome.routes.FiltersEndpoint
+import pl.cuyer.thedome.routes.AuthEndpoint
+import pl.cuyer.thedome.routes.FavouritesEndpoint
+import pl.cuyer.thedome.routes.SubscriptionsEndpoint
+import pl.cuyer.thedome.routes.FcmTokenEndpoint
+import pl.cuyer.thedome.routes.FcmAdminEndpoint
+import pl.cuyer.thedome.routes.ConfigEndpoint
+import io.ktor.server.plugins.ratelimit.*
+import kotlin.time.Duration.Companion.seconds
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.inject
 import org.koin.logger.slf4jLogger
 import pl.cuyer.thedome.di.appModule
+import pl.cuyer.thedome.AppConfig
+import pl.cuyer.thedome.utils.logException
+import pl.cuyer.thedome.domain.ErrorResponse
+import pl.cuyer.thedome.exceptions.UserAlreadyExistsException
+import pl.cuyer.thedome.exceptions.InvalidCredentialsException
+import pl.cuyer.thedome.exceptions.InvalidRefreshTokenException
+import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
+import pl.cuyer.thedome.exceptions.FiltersOptionsException
+import pl.cuyer.thedome.exceptions.ServersQueryException
+import pl.cuyer.thedome.exceptions.FavouriteLimitException
+import pl.cuyer.thedome.exceptions.SubscriptionLimitException
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 
 private const val API_VERSION = "1.0.0"
 private val logger = LoggerFactory.getLogger("pl.cuyer.thedome.Application")
 
-
-fun main() {
-    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
-    logger.info("Starting server on port $port")
-    embeddedServer(Netty, port = port, module = Application::module).start(wait = true)
+fun main(args: Array<String>) {
+    EngineMain.main(args)
 }
 
 fun Application.module() {
+    val config = AppConfig.load(environment.config)
     install(Koin) {
         slf4jLogger()
-        modules(appModule)
+        modules(appModule(config))
     }
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
     install(Resources)
     install(StatusPages) {
+        exception<UserAlreadyExistsException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
+        }
+        exception<InvalidCredentialsException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized", cause::class.simpleName))
+        }
+        exception<InvalidRefreshTokenException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.Unauthorized, ErrorResponse(cause.message ?: "Unauthorized", cause::class.simpleName))
+        }
+        exception<AnonymousUpgradeException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
+        }
+        exception<FiltersOptionsException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error", cause::class.simpleName))
+        }
+        exception<ServersQueryException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error", cause::class.simpleName))
+        }
+        exception<FavouriteLimitException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
+        }
+        exception<SubscriptionLimitException> { call, cause ->
+            logException(call, cause)
+            call.respond(HttpStatusCode.Conflict, ErrorResponse(cause.message ?: "Conflict", cause::class.simpleName))
+        }
         exception<Throwable> { call, cause ->
-            call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
+            logException(call, cause)
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse(cause.message ?: "Internal server error", cause::class.simpleName))
         }
         status(HttpStatusCode.NotFound) { call, status ->
-            call.respondText(text = "404: Page Not Found", status = status)
+            call.respond(status, ErrorResponse("Page Not Found", status::class.simpleName))
         }
     }
     install(CallLogging) {
-        filter { call -> call.request.path().startsWith("/servers") }
         format { call ->
             val status = call.response.status()
             val httpMethod = call.request.httpMethod.value
@@ -72,17 +140,69 @@ fun Application.module() {
     }
 
     install(CORS) {
-        anyHost()
+        val allowedOriginsEnv = config.allowedOrigins
+        if (allowedOriginsEnv.isNullOrBlank()) {
+            anyHost()
+        } else {
+            allowedOriginsEnv.split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { origin ->
+                val uri = try { java.net.URI(origin) } catch (_: Exception) { null }
+                if (uri != null && uri.host != null) {
+                    allowHost(uri.host, schemes = listOfNotNull(uri.scheme))
+                } else {
+                    allowHost(origin)
+                }
+            }
+        }
         allowHeader(HttpHeaders.ContentType)
     }
 
-    val mongoUri = System.getenv("MONGODB_URI") ?: "mongodb://localhost:27017"
+    val jwtAudience = config.jwtAudience
+    val jwtIssuer = config.jwtIssuer
+    val jwtRealm = config.jwtRealm
+    val jwtSecret = config.jwtSecret
+
+    install(Authentication) {
+        jwt("auth-jwt") {
+            realm = jwtRealm
+            verifier(
+                JWT
+                    .require(Algorithm.HMAC256(jwtSecret))
+                    .withAudience(jwtAudience)
+                    .withIssuer(jwtIssuer)
+                    .build()
+            )
+            validate { credential ->
+                if (credential.payload.audience.contains(jwtAudience)) {
+                    JWTPrincipal(credential.payload)
+                } else null
+            }
+        }
+    }
+
+    install(RateLimit) {
+        global {
+            requestKey { call ->
+                val principal = call.principal<JWTPrincipal>()
+                principal?.getClaim("username", String::class) ?: ""
+            }
+            rateLimiter { _, key ->
+                if ((key as String).startsWith("anon-")) {
+                    RateLimiter.default(limit = config.anonRateLimit, refillPeriod = config.anonRefillPeriod.seconds)
+                } else {
+                    RateLimiter.Unlimited
+                }
+            }
+        }
+    }
 
     val fetchService by inject<ServerFetchService>()
-
-    val fetchCron = System.getenv("FETCH_CRON") ?: "0 */10 * * *"
-    val schedulerClient = MongoClient.create(mongoUri)
-    logger.info("Scheduling fetch task with cron expression '$fetchCron'")
+    val cleanupService by inject<ServerCleanupService>()
+    val fcmService by inject<FcmService>()
+    val fcmTokenService by inject<FcmTokenService>()
+    val anonCleanupService by inject<AnonymousCleanupService>()
+    val schedulerClient by inject<MongoClient>()
+    logger.info("Scheduling fetch task with cron expression '${config.fetchCron}'")
+    logger.info("Scheduling cleanup task with cron expression '${config.cleanupCron}'")
 
     install(TaskScheduling) {
         mongoDb {
@@ -91,9 +211,46 @@ fun Application.module() {
         }
         task {
             name = "fetch-servers"
-            kronSchedule = { applyCron(fetchCron) }
+            kronSchedule = { applyCron(config.fetchCron) }
             task = { fetchService.fetchServers() }
         }
+        task {
+            name = "cleanup-servers"
+            kronSchedule = { applyCron(config.cleanupCron) }
+            task = { cleanupService.cleanupOldServers() }
+        }
+        task {
+            name = "cleanup-tokens"
+            kronSchedule = { applyCron(config.cleanupCron) }
+            task = { fcmTokenService.removeStaleTokens() }
+        }
+        task {
+            name = "cleanup-anonymous"
+            kronSchedule = { applyCron(config.cleanupCron) }
+            task = { anonCleanupService.cleanupExpiredUsers() }
+        }
+        task {
+            name = "resubscribe-topics"
+            kronSchedule = { applyCron(config.resubscribeCron) }
+            task = { fcmTokenService.resubscribeTokens() }
+        }
+        task {
+            name = "notify-wipes"
+            kronSchedule = { applyCron(config.notificationCron) }
+            task = { fcmService.checkAndSend() }
+        }
+    }
+
+    val metricsRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    install(MicrometerMetrics) {
+        registry = metricsRegistry
+        meterBinders = listOf(
+            ClassLoaderMetrics(),
+            JvmMemoryMetrics(),
+            JvmGcMetrics(),
+            ProcessorMetrics(),
+            JvmThreadMetrics()
+        )
     }
 
     monitor.subscribe(ApplicationStopped) {
@@ -102,21 +259,40 @@ fun Application.module() {
 
     val serversService by inject<ServersService>()
     val filtersService by inject<FiltersService>()
-    val serversEndpoint = ServersEndpoint(serversService)
+    val authService by inject<AuthService>()
+    val favouritesService by inject<FavouritesService>()
+    val subscriptionsService by inject<SubscriptionsService>()
+    val serversEndpoint = ServersEndpoint(serversService, favouritesService, subscriptionsService)
     val filtersEndpoint = FiltersEndpoint(filtersService)
+    val authEndpoint = AuthEndpoint(authService)
+    val configEndpoint = ConfigEndpoint(config)
+    val favouritesEndpoint = FavouritesEndpoint(favouritesService)
+    val subscriptionsEndpoint = SubscriptionsEndpoint(subscriptionsService)
+    val fcmTokenEndpoint = FcmTokenEndpoint(fcmTokenService)
+    val fcmAdminEndpoint = FcmAdminEndpoint(fcmService, config.apiKey)
 
     routing {
-        get("/") {
-            call.respond(
-                mapOf(
-                    "name" to "TheDome API",
-                    "version" to API_VERSION,
-                    "docs" to "/swagger"
+        authEndpoint.register(this)
+        configEndpoint.register(this)
+
+        authenticate("auth-jwt") {
+            get("/") {
+                call.respond(
+                    mapOf(
+                        "name" to "TheDome API",
+                        "version" to API_VERSION,
+                        "docs" to "/swagger"
+                    )
                 )
-            )
+            }
+            serversEndpoint.register(this)
+            filtersEndpoint.register(this)
+            favouritesEndpoint.register(this)
+            subscriptionsEndpoint.register(this)
+            fcmTokenEndpoint.register(this)
         }
-        serversEndpoint.register(this)
-        filtersEndpoint.register(this)
+        fcmAdminEndpoint.register(this)
+        get("/metrics") { call.respondText(metricsRegistry.scrape()) }
         swaggerUI(path = "swagger")
     }
 }

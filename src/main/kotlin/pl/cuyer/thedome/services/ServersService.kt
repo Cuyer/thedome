@@ -3,22 +3,37 @@ package pl.cuyer.thedome.services
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Sorts
 import org.bson.conversions.Bson
-import org.litote.kmongo.coroutine.CoroutineCollection
+import com.mongodb.kotlin.client.coroutine.MongoCollection
+import kotlinx.coroutines.flow.toList
 import pl.cuyer.thedome.domain.battlemetrics.BattlemetricsServerContent
 import pl.cuyer.thedome.domain.battlemetrics.toServerInfo
 import pl.cuyer.thedome.domain.server.Order
 import pl.cuyer.thedome.domain.server.ServerInfo
 import pl.cuyer.thedome.domain.server.ServersResponse
+import pl.cuyer.thedome.domain.server.ServerFilter
 import pl.cuyer.thedome.resources.Servers
 import java.util.regex.Pattern
+import org.slf4j.LoggerFactory
 
-class ServersService(private val collection: CoroutineCollection<BattlemetricsServerContent>) {
-    suspend fun getServers(params: Servers): ServersResponse {
+class ServersService(
+    private val collection: MongoCollection<BattlemetricsServerContent>
+) {
+    private val logger = LoggerFactory.getLogger(ServersService::class.java)
+    suspend fun getServers(params: Servers, favourites: List<String>? = null, subscriptions: List<String>? = null): ServersResponse {
+        logger.info("Querying servers with params: $params")
         val page = params.page ?: 1
         val size = params.size ?: 20
         val skip = (page - 1) * size
 
+        val favouritesList = favourites ?: emptyList()
+        val subList = subscriptions ?: emptyList()
+
         val filters = mutableListOf<Bson>()
+        when (params.filter) {
+            ServerFilter.FAVOURITES -> filters += Filters.`in`("id", favouritesList)
+            ServerFilter.SUBSCRIBED -> filters += Filters.`in`("id", subList)
+            else -> {}
+        }
         params.map?.let {
             val pattern = Pattern.compile(it.name.replace('_', ' '), Pattern.CASE_INSENSITIVE)
             filters += Filters.regex("attributes.details.map", pattern)
@@ -69,14 +84,21 @@ class ServersService(private val collection: CoroutineCollection<BattlemetricsSe
             .map { it.toServerInfo() }
             .filter { params.wipeSchedule == null || it.wipeSchedule == params.wipeSchedule }
 
+        val enriched = serverInfos.map { info ->
+            val fav = info.id?.toString()?.let { favouritesList.contains(it) } ?: false
+            val sub = info.id?.toString()?.let { subList.contains(it) } ?: false
+            info.copy(isFavourite = fav, isSubscribed = sub)
+        }
+
         val totalPages = if (size == 0) 0 else ((totalItems + size - 1) / size).toInt()
 
-        return ServersResponse(
+        val response = ServersResponse(
             page = page,
             size = size,
             totalPages = totalPages,
             totalItems = totalItems,
-            servers = serverInfos
+            servers = enriched
         )
+        return response
     }
 }

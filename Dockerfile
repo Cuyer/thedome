@@ -38,6 +38,10 @@ WORKDIR /app
 # Copy built distribution from build stage
 COPY --from=build /app/build/install/thedome /app
 
+ENV JWT_AUDIENCE=thedomeAudience \
+    JWT_ISSUER=thedomeIssuer \
+    JWT_REALM=thedomeRealm
+
 # Set permissions
 RUN chown -R appuser:appgroup /app
 USER appuser

@@ -111,6 +111,140 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FiltersOptions'
+
+  /auth/anonymous:
+    post:
+      summary: Obtain anonymous access token
+      responses:
+        '200':
+          description: Access token and username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+
+  /auth/upgrade:
+    post:
+      summary: Upgrade anonymous account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpgradeRequest'
+      responses:
+        '200':
+          description: Authentication tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '409':
+          description: Username or email already exists
+
+  /auth/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Authentication tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '409':
+          description: Username or email already exists
+
+  /auth/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Invalid credentials
+
+  /auth/google:
+    post:
+      summary: Login with Google
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Authentication tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      summary: Refresh tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: New tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Invalid refresh token
+
+  /fcm/token:
+    post:
+      summary: Register FCM token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FcmTokenRequest'
+      responses:
+        '201':
+          description: Token registered
+
+  /fcm/token/{token}:
+    delete:
+      summary: Delete FCM token
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Token removed
+
 components:
   schemas:
     ServerInfo:
@@ -121,6 +255,12 @@ components:
         name:
           type: string
         wipe:
+          type: string
+          format: date-time
+        next_wipe:
+          type: string
+          format: date-time
+        next_map_wipe:
           type: string
           format: date-time
         status:
@@ -232,3 +372,71 @@ components:
           type: array
           items:
             type: string
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+    GoogleAuthRequest:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+    TokenPair:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        provider:
+          type: string
+        subscribed:
+          type: boolean
+    AccessToken:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        username:
+          type: string
+    FcmTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        timestamp:
+          type: string
+    UpgradeRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        token:
+          type: string
