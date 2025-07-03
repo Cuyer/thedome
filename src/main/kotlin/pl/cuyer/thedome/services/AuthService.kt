@@ -291,6 +291,7 @@ class AuthService(
         val user = collection.find(eq(User::username, username)).firstOrNull() ?: return false
         if (user.googleId != null) return false
         if (!BCrypt.checkpw(oldPassword, user.passwordHash)) return false
+        if (BCrypt.checkpw(newPassword, user.passwordHash)) return false
         val hash = BCrypt.hashpw(newPassword, BCrypt.gensalt())
         collection.updateOne(eq(User::username, username), set(User::passwordHash, hash))
         return true
