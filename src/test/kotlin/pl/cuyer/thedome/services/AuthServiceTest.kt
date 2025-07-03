@@ -324,4 +324,53 @@ class AuthServiceTest {
 
         assertTrue(result == null)
     }
+
+    @Test
+    fun `changePassword updates hash`() = runBlocking {
+        val collection = mockk<MongoCollection<User>>(relaxed = true)
+        val oldHash = BCrypt.hashpw("old", BCrypt.gensalt())
+        val user = User(username = "user", passwordHash = oldHash)
+        val slotUpdate = slot<Bson>()
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        coEvery { collection.updateOne(any<Bson>(), capture(slotUpdate), any()) } returns mockk()
+        val service = AuthService(
+            collection,
+            "secret",
+            "issuer",
+            "audience",
+            3600_000,
+            3600_000,
+            mockk(relaxed = true),
+            "client",
+            HttpClient(MockEngine { respond("", HttpStatusCode.OK) }) { }
+        )
+
+        val result = service.changePassword("user", "old", "new")
+
+        assertTrue(result)
+        assertTrue(slotUpdate.captured.toString().contains("passwordHash"))
+    }
+
+    @Test
+    fun `changePassword fails on wrong password`() = runBlocking {
+        val collection = mockk<MongoCollection<User>>()
+        val oldHash = BCrypt.hashpw("old", BCrypt.gensalt())
+        val user = User(username = "user", passwordHash = oldHash)
+        every { collection.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+        val service = AuthService(
+            collection,
+            "secret",
+            "issuer",
+            "audience",
+            3600_000,
+            3600_000,
+            mockk(relaxed = true),
+            "client",
+            HttpClient(MockEngine { respond("", HttpStatusCode.OK) }) { }
+        )
+
+        val result = service.changePassword("user", "bad", "new")
+
+        assertTrue(!result)
+    }
 }

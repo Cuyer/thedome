@@ -17,6 +17,7 @@ import pl.cuyer.thedome.domain.auth.RefreshRequest
 import pl.cuyer.thedome.domain.auth.UpgradeRequest
 import pl.cuyer.thedome.domain.auth.GoogleAuthRequest
 import pl.cuyer.thedome.domain.auth.DeleteAccountRequest
+import pl.cuyer.thedome.domain.auth.ChangePasswordRequest
 import pl.cuyer.thedome.domain.auth.EmailExistsResponse
 import pl.cuyer.thedome.exceptions.AnonymousUpgradeException
 import pl.cuyer.thedome.exceptions.InvalidCredentialsException
@@ -92,6 +93,14 @@ class AuthEndpoint(private val service: AuthService) {
                         val password = req?.password
                         val deleted = service.deleteAccount(username, password)
                         if (!deleted) throw InvalidCredentialsException()
+                        call.respond(HttpStatusCode.NoContent)
+                    }
+                    post("/password") {
+                        val principal = call.principal<JWTPrincipal>()!!
+                        val username = principal.getClaim("username", String::class)!!
+                        val req = call.receive<ChangePasswordRequest>()
+                        val changed = service.changePassword(username, req.oldPassword, req.newPassword)
+                        if (!changed) throw InvalidCredentialsException()
                         call.respond(HttpStatusCode.NoContent)
                     }
                 }
