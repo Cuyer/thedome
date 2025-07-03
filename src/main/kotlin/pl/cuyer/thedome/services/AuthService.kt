@@ -287,6 +287,15 @@ class AuthService(
         return true
     }
 
+    suspend fun changePassword(username: String, oldPassword: String, newPassword: String): Boolean {
+        val user = collection.find(eq(User::username, username)).firstOrNull() ?: return false
+        if (user.googleId != null) return false
+        if (!BCrypt.checkpw(oldPassword, user.passwordHash)) return false
+        val hash = BCrypt.hashpw(newPassword, BCrypt.gensalt())
+        collection.updateOne(eq(User::username, username), set(User::passwordHash, hash))
+        return true
+    }
+
     suspend fun emailExists(email: String): AuthProvider? {
         return collection.find(eq(User::email, email)).firstOrNull()?.provider
     }
