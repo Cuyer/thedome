@@ -50,6 +50,7 @@ import pl.cuyer.thedome.routes.AuthEndpoint
 import pl.cuyer.thedome.routes.FavouritesEndpoint
 import pl.cuyer.thedome.routes.SubscriptionsEndpoint
 import pl.cuyer.thedome.routes.FcmTokenEndpoint
+import pl.cuyer.thedome.routes.FcmAdminEndpoint
 import pl.cuyer.thedome.routes.ConfigEndpoint
 import io.ktor.server.plugins.ratelimit.*
 import kotlin.time.Duration.Companion.seconds
@@ -268,6 +269,7 @@ fun Application.module() {
     val favouritesEndpoint = FavouritesEndpoint(favouritesService)
     val subscriptionsEndpoint = SubscriptionsEndpoint(subscriptionsService)
     val fcmTokenEndpoint = FcmTokenEndpoint(fcmTokenService)
+    val fcmAdminEndpoint = FcmAdminEndpoint(fcmService, config.apiKey)
 
     routing {
         authEndpoint.register(this)
@@ -289,6 +291,7 @@ fun Application.module() {
             subscriptionsEndpoint.register(this)
             fcmTokenEndpoint.register(this)
         }
+        fcmAdminEndpoint.register(this)
         get("/metrics") { call.respondText(metricsRegistry.scrape()) }
         swaggerUI(path = "swagger")
     }

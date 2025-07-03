@@ -3,6 +3,7 @@ package pl.cuyer.thedome.services
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.FirebaseMessagingException
+import com.google.api.core.ApiFutures
 import com.google.auth.oauth2.GoogleCredentials
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import com.mongodb.kotlin.client.coroutine.FindFlow
@@ -30,6 +31,7 @@ class FcmServiceTest {
     @Test
     fun `checkAndSend sends message using firebase`() = runBlocking {
         val messaging = mockk<FirebaseMessaging>(relaxed = true)
+        every { messaging.sendAsync(any()) } returns ApiFutures.immediateFuture("1")
         val credentials = mockk<GoogleCredentials>(relaxed = true)
         val tokenService = mockk<FcmTokenService>(relaxed = true)
         val now = Clock.System.now()
@@ -52,7 +54,7 @@ class FcmServiceTest {
 
         val captured = slot<Message>()
         verify { credentials.refreshIfExpired() }
-        verify { messaging.send(capture(captured)) }
+        verify { messaging.sendAsync(capture(captured)) }
         val message = captured.captured
         fun field(target: Any, name: String): Any? = target.javaClass.getDeclaredField(name).apply { isAccessible = true }.get(target)
         assertEquals("1", field(message, "topic"))
@@ -68,7 +70,7 @@ class FcmServiceTest {
         val exception = mockk<FirebaseMessagingException>()
         every { exception.message } returns "error"
         val messaging = mockk<FirebaseMessaging>()
-        every { messaging.send(any()) } throws exception
+        every { messaging.sendAsync(any()) } returns ApiFutures.immediateFailedFuture(exception)
         val credentials = mockk<GoogleCredentials>(relaxed = true)
         val tokenService = mockk<FcmTokenService>(relaxed = true)
         val now = Clock.System.now()
@@ -90,5 +92,41 @@ class FcmServiceTest {
         service.checkAndSend()
 
         coVerify(exactly = 0) { tokenService.removeToken(any(), any()) }
+    }
+
+    @Test
+    fun `checkAndSend sends for multiple servers`() = runBlocking {
+        val messaging = mockk<FirebaseMessaging>(relaxed = true)
+        every { messaging.sendAsync(any()) } returns ApiFutures.immediateFuture("1")
+        val credentials = mockk<GoogleCredentials>(relaxed = true)
+        val tokenService = mockk<FcmTokenService>(relaxed = true)
+        val now = Clock.System.now()
+        val server1 = BattlemetricsServerContent(
+            attributes = Attributes(
+                id = "a1",
+                name = "Server1",
+                details = Details(rustNextWipe = (now + 30.seconds).toString())
+            ),
+            id = "1"
+        )
+        val server2 = BattlemetricsServerContent(
+            attributes = Attributes(
+                id = "a2",
+                name = "Server2",
+                details = Details(rustNextWipe = (now + 30.seconds).toString())
+            ),
+            id = "2"
+        )
+        val serverColl = mockk<MongoCollection<BattlemetricsServerContent>>()
+        every { serverColl.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(server1, server2)))
+        val usersColl = mockk<MongoCollection<User>>()
+        val user = User(username = "user", passwordHash = "", subscriptions = listOf("1", "2"), fcmTokens = listOf(FcmToken("t1", "ts")))
+        every { usersColl.find(any<Bson>()) } returns FindFlow(SimpleFindPublisher(listOf(user)))
+
+        val service = FcmService(messaging, serverColl, listOf(1), emptyList(), credentials, usersColl, tokenService)
+
+        service.checkAndSend()
+
+        verify(exactly = 2) { messaging.sendAsync(any()) }
     }
 }
